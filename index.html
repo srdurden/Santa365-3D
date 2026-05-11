@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fábrica de regalos</title>
+  <style>
+    :root {
+      --cream-bg: #f6ead2;
+      --cream-panel: #fff1d2;
+      --cream-line: #d3b16f;
+      --brown-text: #4a2b16;
+      --button-bg: #d58b34;
+      --button-bg-hover: #e29d4b;
+      --button-shadow: #8a4e1f;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--cream-bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--brown-text);
+    }
+
+    #topHud {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 76px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #gameTitle {
+      position: absolute;
+      left: 28px;
+      top: 18px;
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1;
+      letter-spacing: -0.06em;
+      font-weight: 850;
+      color: #4a2b16;
+      text-shadow: 0 2px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    #dayCounter {
+      position: absolute;
+      right: 34px;
+      top: 26px;
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 650;
+      letter-spacing: 0.03em;
+      color: #5b3a20;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    #gameHost {
+      position: fixed;
+      left: 0;
+      top: 76px;
+      bottom: 0;
+      right: 330px;
+      overflow: hidden;
+      background: var(--cream-bg);
+    }
+
+    #sidePanel {
+      position: fixed;
+      top: 76px;
+      right: 0;
+      bottom: 0;
+      width: 330px;
+      box-sizing: border-box;
+      padding: 26px 24px;
+      background: linear-gradient(180deg, #fff1d2 0%, #f5dfad 100%);
+      border-left: 2px solid rgba(150, 103, 45, 0.18);
+      box-shadow: inset 10px 0 22px rgba(107, 65, 20, 0.08);
+      z-index: 9;
+    }
+
+    .sideButton {
+      width: 100%;
+      height: 52px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--button-bg);
+      box-shadow: 0 6px 0 var(--button-shadow), 0 14px 24px rgba(102, 59, 20, 0.18);
+      color: #fff9e9;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      text-transform: lowercase;
+      margin-bottom: 16px;
+    }
+
+    .sideButton:hover {
+      background: var(--button-bg-hover);
+      transform: translateY(1px);
+      box-shadow: 0 5px 0 var(--button-shadow), 0 12px 20px rgba(102, 59, 20, 0.16);
+    }
+
+    .sideButton:active {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 var(--button-shadow), 0 6px 12px rgba(102, 59, 20, 0.12);
+    }
+
+    #buildPopup {
+      position: fixed;
+      top: 154px;
+      right: 24px;
+      width: 282px;
+      max-height: calc(100vh - 190px);
+      box-sizing: border-box;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 244, 213, 0.96);
+      border: 2px solid rgba(141, 92, 34, 0.28);
+      box-shadow: 0 18px 38px rgba(97, 56, 18, 0.26), inset 0 2px 0 rgba(255,255,255,0.55);
+      z-index: 20;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    #buildPopup.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .buildGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .buildOption {
+      height: 74px;
+      border: 0;
+      border-radius: 16px;
+      background: #e6bd78;
+      box-shadow: 0 5px 0 #9b642a, 0 12px 18px rgba(102, 59, 20, 0.12);
+      color: #4a2b16;
+      font-size: 16px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .buildOption:hover {
+      background: #efcb8a;
+      transform: translateY(1px);
+      box-shadow: 0 4px 0 #9b642a, 0 10px 16px rgba(102, 59, 20, 0.12);
+    }
+
+    .buildOption:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #9b642a, 0 5px 10px rgba(102, 59, 20, 0.1);
+    }
+
+    .buildPlaceholder {
+      height: 74px;
+      border-radius: 16px;
+      background: rgba(141, 92, 34, 0.10);
+      border: 2px dashed rgba(141, 92, 34, 0.18);
+    }
+
+    #inventoryMount {
+      width: 100%;
+      height: min(520px, calc(100vh - 176px));
+      margin-top: 8px;
+      border-radius: 22px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 150ms ease, transform 150ms ease;
+      filter: drop-shadow(0 18px 26px rgba(97, 56, 18, 0.22));
+    }
+
+    #inventoryMount.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    #inventoryMount canvas {
+      border-radius: 22px;
+      cursor: default;
+    }
+
+    @media (max-width: 900px) {
+      #gameHost {
+        right: 240px;
+      }
+      #sidePanel {
+        width: 240px;
+        padding: 22px 16px;
+      }
+      #dayCounter {
+        right: 24px;
+      }
+      #buildPopup {
+        right: 16px;
+        width: 208px;
+      }
+      .buildGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="topHud">
+    <div id="gameTitle">365 days</div>
+    <div id="dayCounter">1 / 365</div>
+  </div>
+  <main id="gameHost" aria-label="Escenario 3D"></main>
+  <aside id="sidePanel">
+    <button id="inventoryButton" class="sideButton" type="button">inventario</button>
+    <button id="buildButton" class="sideButton" type="button">construir</button>
+    <div id="inventoryMount" aria-label="Inventario 3D"></div>
+  </aside>
+  <div id="buildPopup" aria-label="Construir">
+    <div class="buildGrid">
+      <button class="buildOption" type="button" data-build="cama">Cama</button>
+      <div class="buildPlaceholder" aria-hidden="true"></div>
+      <div class="buildPlaceholder" aria-hidden="true"></div>
+      <div class="buildPlaceholder" aria-hidden="true"></div>
+      <div class="buildPlaceholder" aria-hidden="true"></div>
+      <div class="buildPlaceholder" aria-hidden="true"></div>
+    </div>
+  </div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf6ead2);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const gameHost = document.getElementById('gameHost');
+const sidePanel = document.getElementById('sidePanel');
+const inventoryButton = document.getElementById('inventoryButton');
+const buildButton = document.getElementById('buildButton');
+const buildPopup = document.getElementById('buildPopup');
+const inventoryMount = document.getElementById('inventoryMount');
+renderer.setSize(gameHost.clientWidth, gameHost.clientHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+gameHost.appendChild(renderer.domElement);
+
+const camera = new THREE.OrthographicCamera(-24, 24, 16, -16, 0.1, 200);
+camera.position.set(0, 38, 31);
+camera.lookAt(0, 0, 0);
+
+const hemi = new THREE.HemisphereLight(0xfff4dc, 0x3a2a1a, 2.35);
+scene.add(hemi);
+
+const dir = new THREE.DirectionalLight(0xfff1d0, 3.0);
+dir.position.set(-10, 22, 14);
+dir.castShadow = true;
+dir.shadow.mapSize.width = 2048;
+dir.shadow.mapSize.height = 2048;
+dir.shadow.camera.left = -32;
+dir.shadow.camera.right = 32;
+dir.shadow.camera.top = 24;
+dir.shadow.camera.bottom = -24;
+dir.shadow.camera.near = 1;
+dir.shadow.camera.far = 70;
+scene.add(dir);
+
+const ROOM = {
+  minX: -22,
+  maxX: 22,
+  minZ: -16,
+  maxZ: 19
+};
+
+const matFloor = new THREE.MeshStandardMaterial({ color: 0xa94910, roughness: 0.82 });
+const matWall = new THREE.MeshStandardMaterial({ color: 0xc59b5d, roughness: 0.76 });
+const matWood = new THREE.MeshStandardMaterial({ color: 0xa7662a, roughness: 0.72 });
+const matWoodDark = new THREE.MeshStandardMaterial({ color: 0x6a3f1d, roughness: 0.78 });
+const matCream = new THREE.MeshStandardMaterial({ color: 0xe8c697, roughness: 0.66 });
+const matWhite = new THREE.MeshStandardMaterial({ color: 0xf3ead9, roughness: 0.55 });
+const matRed = new THREE.MeshStandardMaterial({ color: 0xd22a22, roughness: 0.58 });
+const matGreen = new THREE.MeshStandardMaterial({ color: 0x1c9a5a, roughness: 0.6 });
+const matBlack = new THREE.MeshStandardMaterial({ color: 0x171313, roughness: 0.62 });
+const matGlass = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffd89a, emissiveIntensity: 0.72, roughness: 0.25 });
+
+const matSelection = new THREE.MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.28,
+  side: THREE.DoubleSide,
+  depthTest: false,
+  depthWrite: false
+});
+
+const matFootprint = new THREE.MeshBasicMaterial({
+  color: 0x000000,
+  transparent: true,
+  opacity: 0.46,
+  side: THREE.DoubleSide,
+  depthTest: false,
+  depthWrite: false
+});
+
+const matFootprintLine = new THREE.LineBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.98,
+  depthTest: false,
+  depthWrite: false
+});
+
+const movingMaterialCache = new Map();
+
+function box(name, size, pos, material, parent = scene, cast = true, receive = true) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), material);
+  mesh.name = name;
+  mesh.position.set(pos.x, pos.y, pos.z);
+  mesh.castShadow = cast;
+  mesh.receiveShadow = receive;
+  parent.add(mesh);
+  return mesh;
+}
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(44, 35), matFloor);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = 0;
+floor.position.z = 1.5;
+floor.receiveShadow = true;
+floor.name = 'floor';
+scene.add(floor);
+
+function wallSegment(name, x, z, sx, sz) {
+  box(name, { x: sx, y: 2.35, z: sz }, { x, y: 1.175, z }, matWall, scene, true, true);
+}
+
+wallSegment('top-wall', 0, -16.55, 45, 1.1);
+wallSegment('left-wall', -22.55, 0, 1.1, 33.1);
+wallSegment('right-wall-top', 22.55, -8.7, 1.1, 15.6);
+wallSegment('right-wall-bottom', 22.55, 10.2, 1.1, 11.6);
+
+box('top-cap', { x: 45.4, y: 0.28, z: 1.22 }, { x: 0, y: 2.48, z: -16.55 }, matCream, scene, true, true);
+box('left-cap', { x: 1.22, y: 0.28, z: 33.2 }, { x: -22.55, y: 2.48, z: 0 }, matCream, scene, true, true);
+box('right-cap-top', { x: 1.22, y: 0.28, z: 15.6 }, { x: 22.55, y: 2.48, z: -8.7 }, matCream, scene, true, true);
+box('right-cap-bottom', { x: 1.22, y: 0.28, z: 11.6 }, { x: 22.55, y: 2.48, z: 10.2 }, matCream, scene, true, true);
+
+function makeWindow(x) {
+  const g = new THREE.Group();
+  g.position.set(x, 2.0, -16.15);
+  box('window-frame', { x: 1.45, y: 1.05, z: 0.18 }, { x: 0, y: 0, z: 0 }, matWoodDark, g, true, true);
+  box('window-light', { x: 1.06, y: 0.72, z: 0.22 }, { x: 0, y: 0.02, z: -0.02 }, matGlass, g, false, false);
+  box('window-cross-v', { x: 0.12, y: 0.78, z: 0.27 }, { x: 0, y: 0.02, z: -0.04 }, matWoodDark, g, true, true);
+  box('window-cross-h', { x: 1.1, y: 0.12, z: 0.27 }, { x: 0, y: 0.02, z: -0.04 }, matWoodDark, g, true, true);
+  scene.add(g);
+}
+makeWindow(-9.4);
+makeWindow(3.0);
+
+const furnitureRoots = [];
+const furnitureMeshes = [];
+
+function registerFurniture(group, radius = 2, footprintX = null, footprintZ = null) {
+  group.userData.isFurnitureRoot = true;
+  group.userData.radius = radius;
+  group.userData.footprintX = footprintX || radius * 2;
+  group.userData.footprintZ = footprintZ || radius * 2;
+  furnitureRoots.push(group);
+  group.traverse(obj => {
+    if (obj.isMesh) {
+      obj.userData.furnitureRoot = group;
+      furnitureMeshes.push(obj);
+    }
+  });
+  return group;
+}
+
+function makeTableSet(position = { x: 0, z: -0.6 }) {
+  const g = new THREE.Group();
+  g.position.set(position.x, 0, position.z);
+  box('table-top', { x: 4.4, y: 0.45, z: 2.6 }, { x: 0, y: 1.05, z: 0 }, matWood, g, true, true);
+  box('table-leg-1', { x: 0.35, y: 1.0, z: 0.35 }, { x: -1.7, y: 0.5, z: -0.9 }, matWoodDark, g, true, true);
+  box('table-leg-2', { x: 0.35, y: 1.0, z: 0.35 }, { x: 1.7, y: 0.5, z: -0.9 }, matWoodDark, g, true, true);
+  box('table-leg-3', { x: 0.35, y: 1.0, z: 0.35 }, { x: -1.7, y: 0.5, z: 0.9 }, matWoodDark, g, true, true);
+  box('table-leg-4', { x: 0.35, y: 1.0, z: 0.35 }, { x: 1.7, y: 0.5, z: 0.9 }, matWoodDark, g, true, true);
+  box('chair-left-seat', { x: 0.9, y: 0.42, z: 1.05 }, { x: -3.0, y: 0.55, z: 0 }, matWood, g, true, true);
+  box('chair-left-back', { x: 0.25, y: 1.2, z: 1.1 }, { x: -3.52, y: 1.1, z: 0 }, matCream, g, true, true);
+  box('chair-right-seat', { x: 0.9, y: 0.42, z: 1.05 }, { x: 3.0, y: 0.55, z: 0 }, matWood, g, true, true);
+  box('chair-right-back', { x: 0.25, y: 1.2, z: 1.1 }, { x: 3.52, y: 1.1, z: 0 }, matCream, g, true, true);
+  scene.add(g);
+  return registerFurniture(g, 4.2, 7.6, 3.2);
+}
+
+function makeLongWorkbench() {
+  const g = new THREE.Group();
+  g.position.set(-7.0, 0, -13.0);
+  box('workbench-base', { x: 11.2, y: 0.75, z: 1.55 }, { x: 0, y: 0.38, z: 0.55 }, matWoodDark, g, true, true);
+  box('workbench-top', { x: 11.6, y: 0.55, z: 1.7 }, { x: 0, y: 1.08, z: 0.25 }, matCream, g, true, true);
+  scene.add(g);
+  return registerFurniture(g, 5.9, 12.1, 2.4);
+}
+
+function makeBed(position = { x: 14.3, z: 7.0 }) {
+  const g = new THREE.Group();
+  g.position.set(position.x, 0, position.z);
+  // Por defecto, el cojín queda mirando al norte.
+  g.rotation.y = Math.PI;
+  box('bed-base', { x: 3.7, y: 0.45, z: 5.0 }, { x: 0, y: 0.35, z: 0 }, matWoodDark, g, true, true);
+  box('bed-mattress', { x: 3.25, y: 0.55, z: 4.55 }, { x: 0, y: 0.84, z: 0 }, matWhite, g, true, true);
+  box('bed-pillow', { x: 2.25, y: 0.38, z: 1.15 }, { x: 0, y: 1.25, z: 1.25 }, matCream, g, true, true);
+  scene.add(g);
+  return registerFurniture(g, 3.2, 4.2, 5.4);
+}
+
+function makeBottomBench() {
+  const g = new THREE.Group();
+  g.position.set(0.0, 0, 13.1);
+  box('bottom-table-top', { x: 7.6, y: 0.45, z: 1.55 }, { x: 0, y: 1.05, z: 0 }, matWood, g, true, true);
+  box('bottom-table-leg-1', { x: 0.32, y: 1.0, z: 0.32 }, { x: -3.25, y: 0.5, z: -0.55 }, matWoodDark, g, true, true);
+  box('bottom-table-leg-2', { x: 0.32, y: 1.0, z: 0.32 }, { x: 3.25, y: 0.5, z: -0.55 }, matWoodDark, g, true, true);
+  box('bottom-table-leg-3', { x: 0.32, y: 1.0, z: 0.32 }, { x: -3.25, y: 0.5, z: 0.55 }, matWoodDark, g, true, true);
+  box('bottom-table-leg-4', { x: 0.32, y: 1.0, z: 0.32 }, { x: 3.25, y: 0.5, z: 0.55 }, matWoodDark, g, true, true);
+  scene.add(g);
+  return registerFurniture(g, 4.0, 8.2, 2.1);
+}
+
+// La habitación empieza vacía: los muebles se construirán desde el botón “construir”.
+
+const santa = new THREE.Group();
+santa.position.set(-1.45, 0, 3.4);
+box('santa-red-cube', { x: 1.05, y: 1.05, z: 1.05 }, { x: 0, y: 0.55, z: 0 }, matRed, santa, true, true);
+box('santa-face-trim', { x: 0.55, y: 0.16, z: 0.12 }, { x: 0, y: 0.72, z: -0.56 }, matWhite, santa, true, true);
+box('santa-belt', { x: 1.08, y: 0.12, z: 1.08 }, { x: 0, y: 0.44, z: 0 }, matBlack, santa, true, true);
+scene.add(santa);
+
+const elf = new THREE.Group();
+elf.position.set(0.75, 0, 3.25);
+box('elf-green-cube', { x: 0.82, y: 0.82, z: 0.82 }, { x: 0, y: 0.42, z: 0 }, matGreen, elf, true, true);
+box('elf-ear-l', { x: 0.18, y: 0.28, z: 0.18 }, { x: -0.52, y: 0.66, z: 0 }, matGreen, elf, true, true);
+box('elf-ear-r', { x: 0.18, y: 0.28, z: 0.18 }, { x: 0.52, y: 0.66, z: 0 }, matGreen, elf, true, true);
+scene.add(elf);
+
+const selectionRing = new THREE.Mesh(new THREE.RingGeometry(1.35, 1.55, 48), matSelection);
+selectionRing.rotation.x = -Math.PI / 2;
+selectionRing.position.y = 0.045;
+selectionRing.visible = false;
+selectionRing.renderOrder = 3000;
+scene.add(selectionRing);
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const groundPoint = new THREE.Vector3();
+
+let selectedFurniture = null;
+let selectedOriginalMaterials = null;
+let selectedOriginalPosition = null;
+let selectedOriginalRotationY = 0;
+let footprintHelper = null;
+let lastPointerClientX = window.innerWidth * 0.5;
+let lastPointerClientY = window.innerHeight * 0.5;
+let pointerKnown = false;
+let santaTarget = santa.position.clone();
+
+let inventoryOpen = false;
+const inventoryRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+inventoryRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+inventoryRenderer.setClearColor(0x000000, 0);
+inventoryMount.appendChild(inventoryRenderer.domElement);
+
+const inventoryScene = new THREE.Scene();
+const inventoryCamera = new THREE.OrthographicCamera(-5, 5, 7, -7, 0.1, 100);
+inventoryCamera.position.set(0, 0, 20);
+inventoryCamera.lookAt(0, 0, 0);
+
+const invAmbient = new THREE.HemisphereLight(0xfff8e6, 0x4f3016, 2.2);
+inventoryScene.add(invAmbient);
+const invDir = new THREE.DirectionalLight(0xffffff, 1.8);
+invDir.position.set(-4, 5, 9);
+inventoryScene.add(invDir);
+
+const invMatPanel = new THREE.MeshStandardMaterial({ color: 0xd9c6a0, roughness: 0.68 });
+const invMatPanelDark = new THREE.MeshStandardMaterial({ color: 0x987a52, roughness: 0.78 });
+const invMatSlot = new THREE.MeshStandardMaterial({ color: 0xa79e8d, roughness: 0.72 });
+const invMatSlotInner = new THREE.MeshStandardMaterial({ color: 0x716d62, roughness: 0.82 });
+const invMatPreview = new THREE.MeshStandardMaterial({ color: 0x2f2a25, roughness: 0.86 });
+const invMatGold = new THREE.MeshStandardMaterial({ color: 0xe7bf69, roughness: 0.48 });
+const invMatRed = new THREE.MeshStandardMaterial({ color: 0xd52c25, roughness: 0.58 });
+const invMatGreen = new THREE.MeshStandardMaterial({ color: 0x1f9d62, roughness: 0.62 });
+const invMatRibbon = new THREE.MeshStandardMaterial({ color: 0xfff4cf, roughness: 0.45 });
+const invMatShadow = new THREE.MeshBasicMaterial({ color: 0x3b2a1a, transparent: true, opacity: 0.18 });
+
+const inventoryItemRotators = [];
+
+function invBox(name, size, pos, mat, parent = inventoryScene) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), mat);
+  mesh.name = name;
+  mesh.position.set(pos.x, pos.y, pos.z);
+  parent.add(mesh);
+  return mesh;
+}
+
+function makeRoundedRectShape(width, height, radius) {
+  const x = -width / 2;
+  const y = -height / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(x + radius, y);
+  shape.lineTo(x + width - radius, y);
+  shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+  shape.lineTo(x + width, y + height - radius);
+  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  shape.lineTo(x + radius, y + height);
+  shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+  shape.lineTo(x, y + radius);
+  shape.quadraticCurveTo(x, y, x + radius, y);
+  return shape;
+}
+
+function invRoundedPlane(name, width, height, radius, mat, z = -0.1, parent = inventoryScene) {
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(makeRoundedRectShape(width, height, radius)), mat);
+  mesh.name = name;
+  mesh.position.z = z;
+  parent.add(mesh);
+  return mesh;
+}
+
+function makeInventorySlot(x, y, size = 0.86) {
+  invBox('slot-outer', { x: size, y: size, z: 0.12 }, { x, y, z: 0.08 }, invMatPanelDark);
+  invBox('slot-inner', { x: size - 0.12, y: size - 0.12, z: 0.14 }, { x, y, z: 0.16 }, invMatSlotInner);
+  invBox('slot-floor', { x: size - 0.24, y: size - 0.24, z: 0.16 }, { x, y, z: 0.23 }, invMatSlot);
+}
+
+function makeGiftIcon(x, y, colorMat, scale = 1) {
+  const g = new THREE.Group();
+  g.position.set(x, y, 0.55);
+  g.rotation.x = 0.15;
+  g.rotation.y = -0.5;
+  invBox('gift-box', { x: 0.48 * scale, y: 0.42 * scale, z: 0.48 * scale }, { x: 0, y: 0, z: 0 }, colorMat, g);
+  invBox('gift-ribbon-v', { x: 0.11 * scale, y: 0.45 * scale, z: 0.52 * scale }, { x: 0, y: 0, z: 0.02 }, invMatRibbon, g);
+  invBox('gift-ribbon-h', { x: 0.52 * scale, y: 0.12 * scale, z: 0.52 * scale }, { x: 0, y: 0.02, z: 0.02 }, invMatRibbon, g);
+  inventoryScene.add(g);
+  inventoryItemRotators.push(g);
+  return g;
+}
+
+function makeMiniSanta(x, y) {
+  const g = new THREE.Group();
+  g.position.set(x, y, 0.65);
+  g.rotation.x = 0.12;
+  g.rotation.y = -0.5;
+  invBox('mini-santa-body', { x: 0.8, y: 1.15, z: 0.55 }, { x: 0, y: -0.35, z: 0 }, invMatRed, g);
+  invBox('mini-santa-face', { x: 0.62, y: 0.44, z: 0.58 }, { x: 0, y: 0.47, z: 0 }, invMatRibbon, g);
+  invBox('mini-santa-hat', { x: 0.66, y: 0.28, z: 0.58 }, { x: 0, y: 0.88, z: 0 }, invMatRed, g);
+  invBox('mini-santa-belt', { x: 0.84, y: 0.12, z: 0.59 }, { x: 0, y: -0.42, z: 0.01 }, invMatPreview, g);
+  inventoryScene.add(g);
+  inventoryItemRotators.push(g);
+}
+
+function makeInventoryPanel() {
+  invRoundedPlane('inventory-shadow', 9.3, 12.25, 0.35, invMatShadow, -0.45);
+  invRoundedPlane('inventory-panel', 9.0, 12.0, 0.32, invMatPanel, -0.25);
+  invBox('inventory-top-highlight', { x: 8.35, y: 0.12, z: 0.16 }, { x: 0, y: 5.66, z: 0.02 }, invMatGold);
+  invBox('inventory-bottom-shadow', { x: 8.35, y: 0.14, z: 0.16 }, { x: 0, y: -5.66, z: 0.02 }, invMatPanelDark);
+
+  // Character preview area.
+  invBox('player-preview-frame', { x: 2.3, y: 3.15, z: 0.13 }, { x: -2.6, y: 2.95, z: 0.04 }, invMatPanelDark);
+  invBox('player-preview-bg', { x: 2.06, y: 2.88, z: 0.16 }, { x: -2.6, y: 2.95, z: 0.16 }, invMatPreview);
+  makeMiniSanta(-2.6, 2.92);
+
+  // Equipment style slots on the left.
+  for (let i = 0; i < 4; i++) makeInventorySlot(-4.0, 4.15 - i * 0.9, 0.66);
+
+  // Crafting-style area on the right.
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 2; col++) {
+      makeInventorySlot(0.7 + col * 0.92, 3.9 - row * 0.92, 0.82);
+    }
+  }
+  invBox('craft-arrow-body', { x: 0.82, y: 0.18, z: 0.13 }, { x: 2.25, y: 3.44, z: 0.16 }, invMatPanelDark);
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(0, 0.35);
+  arrowShape.lineTo(0.62, 0);
+  arrowShape.lineTo(0, -0.35);
+  arrowShape.lineTo(0, 0.35);
+  const arrow = new THREE.Mesh(new THREE.ShapeGeometry(arrowShape), invMatPanelDark);
+  arrow.position.set(2.63, 3.44, 0.17);
+  inventoryScene.add(arrow);
+  makeInventorySlot(3.55, 3.44, 0.9);
+  makeGiftIcon(3.55, 3.44, invMatGreen, 0.86);
+
+  // Main backpack grid.
+  const cols = 7;
+  const rows = 4;
+  const spacing = 0.96;
+  const startX = -3.0;
+  const startY = 0.35;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      makeInventorySlot(startX + col * spacing, startY - row * spacing, 0.84);
+    }
+  }
+
+  // Hotbar row.
+  for (let col = 0; col < cols; col++) {
+    makeInventorySlot(startX + col * spacing, -4.35, 0.9);
+  }
+
+  makeGiftIcon(startX, 0.35, invMatRed, 0.74);
+  makeGiftIcon(startX + spacing * 2, 0.35 - spacing, invMatGreen, 0.72);
+  makeGiftIcon(startX + spacing * 4, -4.35, invMatGold, 0.72);
+}
+makeInventoryPanel();
+
+function resizeInventoryRenderer() {
+  const rect = inventoryMount.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  inventoryRenderer.setSize(w, h, false);
+  const aspect = w / h;
+  const viewHeight = 14;
+  inventoryCamera.left = -viewHeight * aspect / 2;
+  inventoryCamera.right = viewHeight * aspect / 2;
+  inventoryCamera.top = viewHeight / 2;
+  inventoryCamera.bottom = -viewHeight / 2;
+  inventoryCamera.updateProjectionMatrix();
+}
+
+function renderInventory() {
+  for (const item of inventoryItemRotators) {
+    item.rotation.y += 0.008;
+  }
+  inventoryRenderer.render(inventoryScene, inventoryCamera);
+}
+
+inventoryButton.addEventListener('click', () => {
+  inventoryOpen = !inventoryOpen;
+  inventoryMount.classList.toggle('open', inventoryOpen);
+  resizeInventoryRenderer();
+  if (inventoryOpen) renderInventory();
+});
+
+let buildPopupOpen = false;
+
+function setBuildPopupOpen(open) {
+  buildPopupOpen = open;
+  buildPopup.classList.toggle('open', buildPopupOpen);
+}
+
+buildButton.addEventListener('click', () => {
+  setBuildPopupOpen(!buildPopupOpen);
+});
+
+function placeNewFurnitureInMoveMode(kind) {
+  if (selectedFurniture) finishFurnitureMove(selectedFurniture.position);
+
+  const start = nearestFreePoint(clampToRoom(santa.position.clone().add(new THREE.Vector3(3.2, 0, 0)), 1.2));
+  let root = null;
+
+  if (kind === 'cama') {
+    root = makeBed({ x: start.x, z: start.z });
+  }
+
+  if (!root) return;
+  setBuildPopupOpen(false);
+  beginFurnitureMove(root);
+  updateMovingFurniture(start);
+}
+
+buildPopup.addEventListener('click', ev => {
+  const button = ev.target.closest('[data-build]');
+  if (!button) return;
+  placeNewFurnitureInMoveMode(button.dataset.build);
+});
+
+const clock = new THREE.Clock();
+const santaCollisionRadius = 0.64;
+const elfCollisionRadius = 0.54;
+const santaSpeed = 12.4;
+const elfSpeed = 9.6;
+const keyState = {
+  ArrowUp: false,
+  ArrowDown: false,
+  ArrowLeft: false,
+  ArrowRight: false
+};
+
+function setPointer(ev) {
+  const source = ev.touches ? ev.touches[0] : ev;
+  if (!source) return;
+  lastPointerClientX = source.clientX;
+  lastPointerClientY = source.clientY;
+  pointerKnown = true;
+}
+
+function clientToGround(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hit = raycaster.ray.intersectPlane(groundPlane, groundPoint);
+  if (!hit) return null;
+  return new THREE.Vector3(groundPoint.x, 0, groundPoint.z);
+}
+
+function currentGroundPoint() {
+  if (!pointerKnown) return null;
+  return clientToGround(lastPointerClientX, lastPointerClientY);
+}
+
+function clampToRoom(point, margin = 0.8) {
+  return new THREE.Vector3(
+    THREE.MathUtils.clamp(point.x, ROOM.minX + margin, ROOM.maxX - margin),
+    0,
+    THREE.MathUtils.clamp(point.z, ROOM.minZ + margin, ROOM.maxZ - margin)
+  );
+}
+
+function getRotatedFootprint(root) {
+  const x = root.userData.footprintX || 2;
+  const z = root.userData.footprintZ || 2;
+  return { x, z };
+}
+
+function clampFurniturePoint(root, point) {
+  const fp = getRotatedFootprint(root);
+  const marginX = Math.max(1.0, Math.min(6.2, fp.x * 0.5));
+  const marginZ = Math.max(1.0, Math.min(4.2, fp.z * 0.5));
+  return new THREE.Vector3(
+    THREE.MathUtils.clamp(point.x, ROOM.minX + marginX, ROOM.maxX - marginX),
+    0,
+    THREE.MathUtils.clamp(point.z, ROOM.minZ + marginZ, ROOM.maxZ - marginZ)
+  );
+}
+
+function furnitureObstacleRects(ignoreRoot = null, radius = santaCollisionRadius) {
+  return furnitureRoots
+    .filter(root => root !== ignoreRoot)
+    .map(root => {
+      const bounds = new THREE.Box3().setFromObject(root);
+      return {
+        minX: bounds.min.x - radius,
+        maxX: bounds.max.x + radius,
+        minZ: bounds.min.z - radius,
+        maxZ: bounds.max.z + radius
+      };
+    });
+}
+
+function pointHitsFurniture(point, ignoreRoot = null, radius = santaCollisionRadius) {
+  return furnitureObstacleRects(ignoreRoot, radius).some(rect =>
+    point.x >= rect.minX && point.x <= rect.maxX &&
+    point.z >= rect.minZ && point.z <= rect.maxZ
+  );
+}
+
+function nearestFreePoint(point) {
+  if (!pointHitsFurniture(point)) return point.clone();
+
+  const angleSteps = 48;
+  const radiusStep = 0.35;
+  for (let radius = radiusStep; radius <= 8; radius += radiusStep) {
+    for (let i = 0; i < angleSteps; i++) {
+      const angle = (Math.PI * 2 * i) / angleSteps;
+      const candidate = clampToRoom(new THREE.Vector3(
+        point.x + Math.cos(angle) * radius,
+        0,
+        point.z + Math.sin(angle) * radius
+      ), 0.85);
+      if (!pointHitsFurniture(candidate)) return candidate;
+    }
+  }
+  return santa.position.clone();
+}
+
+function canCharacterStandAt(point, radius = santaCollisionRadius) {
+  const margin = Math.max(0.65, radius + 0.16);
+  const insideRoom =
+    point.x >= ROOM.minX + margin && point.x <= ROOM.maxX - margin &&
+    point.z >= ROOM.minZ + margin && point.z <= ROOM.maxZ - margin;
+  return insideRoom && !pointHitsFurniture(point, null, radius);
+}
+
+function canSantaStandAt(point) {
+  return canCharacterStandAt(point, santaCollisionRadius);
+}
+
+function canElfStandAt(point) {
+  return canCharacterStandAt(point, elfCollisionRadius);
+}
+
+function makeFootprintHelper(root) {
+  const fp = getRotatedFootprint(root);
+  const helper = new THREE.Group();
+  helper.renderOrder = 3000;
+
+  const footprint = new THREE.Mesh(
+    new THREE.PlaneGeometry(fp.x + 0.7, fp.z + 0.7),
+    matFootprint
+  );
+  footprint.rotation.x = -Math.PI / 2;
+  footprint.position.y = 0.075;
+  footprint.renderOrder = 3000;
+  helper.add(footprint);
+
+  const hx = (fp.x + 0.82) / 2;
+  const hz = (fp.z + 0.82) / 2;
+  const points = [
+    new THREE.Vector3(-hx, 0.09, -hz),
+    new THREE.Vector3(hx, 0.09, -hz),
+    new THREE.Vector3(hx, 0.09, -hz),
+    new THREE.Vector3(hx, 0.09, hz),
+    new THREE.Vector3(hx, 0.09, hz),
+    new THREE.Vector3(-hx, 0.09, hz),
+    new THREE.Vector3(-hx, 0.09, hz),
+    new THREE.Vector3(-hx, 0.09, -hz)
+  ];
+  const outline = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), matFootprintLine);
+  outline.renderOrder = 3001;
+  helper.add(outline);
+
+  const cornerSize = 0.42;
+  const corners = [
+    [-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]
+  ];
+  for (const [x, z] of corners) {
+    const marker = box('footprint-corner', { x: cornerSize, y: 0.12, z: cornerSize }, { x, y: 0.12, z }, matSelection, helper, false, false);
+    marker.renderOrder = 3002;
+  }
+
+  scene.add(helper);
+  return helper;
+}
+
+function setFurniturePreviewMaterials(root, isMoving) {
+  if (isMoving) {
+    selectedOriginalMaterials = [];
+    root.traverse(obj => {
+      if (!obj.isMesh) return;
+      selectedOriginalMaterials.push([obj, obj.material]);
+      const cached = movingMaterialCache.get(obj.material.uuid);
+      if (cached) {
+        obj.material = cached;
+      } else {
+        const clone = obj.material.clone();
+        clone.transparent = true;
+        clone.opacity = 0.68;
+        clone.depthWrite = false;
+        movingMaterialCache.set(obj.material.uuid, clone);
+        obj.material = clone;
+      }
+      obj.castShadow = false;
+    });
+    return;
+  }
+
+  if (selectedOriginalMaterials) {
+    for (const [obj, material] of selectedOriginalMaterials) {
+      obj.material = material;
+      obj.castShadow = true;
+    }
+  }
+  selectedOriginalMaterials = null;
+}
+
+function clearArrowKeyState() {
+  keyState.ArrowUp = false;
+  keyState.ArrowDown = false;
+  keyState.ArrowLeft = false;
+  keyState.ArrowRight = false;
+}
+
+function beginFurnitureMove(root) {
+  clearArrowKeyState();
+  selectedFurniture = root;
+  selectedOriginalPosition = root.position.clone();
+  selectedOriginalRotationY = root.rotation.y;
+  setFurniturePreviewMaterials(root, true);
+  footprintHelper = makeFootprintHelper(root);
+  const point = currentGroundPoint() || root.position.clone();
+  updateMovingFurniture(point);
+}
+
+function updateMovingFurniture(point) {
+  if (!selectedFurniture || !point) return;
+  const p = clampFurniturePoint(selectedFurniture, point);
+  selectedFurniture.position.x = p.x;
+  selectedFurniture.position.z = p.z;
+
+  if (footprintHelper) {
+    footprintHelper.position.set(p.x, 0, p.z);
+    footprintHelper.rotation.y = selectedFurniture.rotation.y;
+  }
+
+  selectionRing.visible = true;
+  selectionRing.position.set(p.x, 0.045, p.z);
+  const ringScale = Math.max(1.4, (selectedFurniture.userData.radius || 2) * 0.48);
+  selectionRing.scale.set(ringScale, ringScale, ringScale);
+}
+
+function finishFurnitureMove(point) {
+  if (!selectedFurniture) return;
+  updateMovingFurniture(point || currentGroundPoint() || selectedFurniture.position);
+  setFurniturePreviewMaterials(selectedFurniture, false);
+
+  if (footprintHelper) {
+    scene.remove(footprintHelper);
+    footprintHelper.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+    });
+    footprintHelper = null;
+  }
+
+  if (!canSantaStandAt(santa.position)) {
+    santa.position.copy(nearestFreePoint(santa.position));
+    santaTarget.copy(santa.position);
+  }
+
+  selectedFurniture = null;
+  selectedOriginalPosition = null;
+  selectionRing.visible = false;
+}
+
+function rotateFurniture() {
+  if (!selectedFurniture) return;
+  selectedFurniture.rotation.y += Math.PI / 2;
+  updateMovingFurniture(currentGroundPoint() || selectedFurniture.position);
+}
+
+function cancelFurnitureMove() {
+  if (!selectedFurniture) return;
+  selectedFurniture.position.copy(selectedOriginalPosition);
+  selectedFurniture.rotation.y = selectedOriginalRotationY;
+  setFurniturePreviewMaterials(selectedFurniture, false);
+  if (footprintHelper) {
+    scene.remove(footprintHelper);
+    footprintHelper = null;
+  }
+  selectedFurniture = null;
+  selectionRing.visible = false;
+}
+
+function pickFurnitureAtPointer(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(furnitureMeshes, true);
+  if (!hits.length) return null;
+  return hits[0].object.userData.furnitureRoot || null;
+}
+
+function isPointerOverFurniture(clientX, clientY) {
+  return !!pickFurnitureAtPointer(clientX, clientY);
+}
+
+function handlePointerMove(ev) {
+  setPointer(ev);
+  const point = currentGroundPoint();
+  if (selectedFurniture) {
+    updateMovingFurniture(point);
+    renderer.domElement.style.cursor = 'grabbing';
+  } else {
+    renderer.domElement.style.cursor = isPointerOverFurniture(lastPointerClientX, lastPointerClientY) ? 'pointer' : 'default';
+  }
+}
+
+function handlePointerDown(ev) {
+  setPointer(ev);
+
+  if (ev.button === 2) {
+    ev.preventDefault();
+    rotateFurniture();
+    return;
+  }
+
+  if (ev.button !== 0) return;
+  const point = currentGroundPoint();
+
+  if (selectedFurniture) {
+    finishFurnitureMove(point);
+    return;
+  }
+
+  const root = pickFurnitureAtPointer(lastPointerClientX, lastPointerClientY);
+  if (root) {
+    beginFurnitureMove(root);
+    return;
+  }
+
+  if (point) {
+    const destination = clampToRoom(point, 0.85);
+    santaTarget.copy(nearestFreePoint(destination));
+  }
+}
+
+renderer.domElement.addEventListener('pointermove', handlePointerMove);
+document.addEventListener('pointermove', handlePointerMove);
+renderer.domElement.addEventListener('mousemove', handlePointerMove);
+document.addEventListener('mousemove', handlePointerMove);
+renderer.domElement.addEventListener('pointerdown', handlePointerDown);
+document.addEventListener('contextmenu', ev => ev.preventDefault());
+
+document.addEventListener('keydown', ev => {
+  if (ev.key in keyState) {
+    ev.preventDefault();
+
+    // Mientras colocas un mueble, las flechas no mueven a Papá Noel:
+    // rotan el mueble 90º una sola vez por pulsación.
+    if (selectedFurniture) {
+      if (!ev.repeat) rotateFurniture();
+      return;
+    }
+
+    keyState[ev.key] = true;
+  } else if (ev.key === 'Escape') {
+    cancelFurnitureMove();
+  }
+});
+
+document.addEventListener('keyup', ev => {
+  if (ev.key in keyState) {
+    ev.preventDefault();
+    keyState[ev.key] = false;
+  }
+});
+
+function keyboardDirection() {
+  const direction = new THREE.Vector3(0, 0, 0);
+  if (keyState.ArrowUp) direction.z -= 1;
+  if (keyState.ArrowDown) direction.z += 1;
+  if (keyState.ArrowLeft) direction.x -= 1;
+  if (keyState.ArrowRight) direction.x += 1;
+  return direction;
+}
+
+function moveSantaWithCollision(direction, step) {
+  if (direction.lengthSq() === 0) return false;
+  direction.normalize();
+  const next = santa.position.clone().addScaledVector(direction, step);
+  next.y = 0;
+
+  if (canSantaStandAt(next)) {
+    santa.position.copy(next);
+  } else {
+    const slideX = new THREE.Vector3(next.x, 0, santa.position.z);
+    const slideZ = new THREE.Vector3(santa.position.x, 0, next.z);
+
+    if (canSantaStandAt(slideX)) {
+      santa.position.x = slideX.x;
+    } else if (canSantaStandAt(slideZ)) {
+      santa.position.z = slideZ.z;
+    } else {
+      santaTarget.copy(santa.position);
+      return false;
+    }
+  }
+
+  santa.rotation.y = Math.atan2(direction.x, direction.z);
+  return true;
+}
+
+function moveElfWithCollision(target, step) {
+  const direction = target.clone().sub(elf.position);
+  direction.y = 0;
+  const distance = direction.length();
+  if (distance < 0.05) return;
+
+  direction.normalize();
+  const next = elf.position.clone().addScaledVector(direction, Math.min(distance, step));
+  next.y = 0;
+
+  if (canElfStandAt(next)) {
+    elf.position.copy(next);
+  } else {
+    const slideX = new THREE.Vector3(next.x, 0, elf.position.z);
+    const slideZ = new THREE.Vector3(elf.position.x, 0, next.z);
+
+    if (canElfStandAt(slideX)) {
+      elf.position.x = slideX.x;
+    } else if (canElfStandAt(slideZ)) {
+      elf.position.z = slideZ.z;
+    }
+  }
+
+  elf.rotation.y = Math.atan2(direction.x, direction.z);
+}
+
+function updateElfFollower(dt) {
+  const forward = new THREE.Vector3(Math.sin(santa.rotation.y), 0, Math.cos(santa.rotation.y));
+  const right = new THREE.Vector3(forward.z, 0, -forward.x);
+  let desired = santa.position.clone()
+    .addScaledVector(forward, -1.45)
+    .addScaledVector(right, 0.95);
+  desired = clampToRoom(desired, 0.8);
+
+  if (!canElfStandAt(desired)) {
+    desired = santa.position.clone().addScaledVector(forward, -1.85);
+    desired = clampToRoom(desired, 0.8);
+  }
+
+  if (!canElfStandAt(desired)) {
+    desired = nearestFreePoint(santa.position.clone().addScaledVector(forward, -2.1));
+  }
+
+  const distanceToSanta = elf.position.distanceTo(santa.position);
+  if (distanceToSanta > 1.15) {
+    moveElfWithCollision(desired, dt * elfSpeed);
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (selectedFurniture) {
+    updateMovingFurniture(currentGroundPoint());
+  }
+
+  const keyDirection = keyboardDirection();
+  if (keyDirection.lengthSq() > 0) {
+    santaTarget.copy(santa.position);
+    moveSantaWithCollision(keyDirection, dt * santaSpeed);
+  } else {
+    const direction = santaTarget.clone().sub(santa.position);
+    direction.y = 0;
+    const distance = direction.length();
+    if (distance > 0.04) {
+      moveSantaWithCollision(direction, Math.min(distance, dt * santaSpeed));
+    }
+  }
+
+  updateElfFollower(dt);
+
+  renderer.render(scene, camera);
+  if (inventoryOpen) renderInventory();
+}
+animate();
+
+function onResize() {
+  const w = Math.max(1, gameHost.clientWidth);
+  const h = Math.max(1, gameHost.clientHeight);
+  const aspect = w / h;
+  const viewHeight = 36;
+  camera.left = -viewHeight * aspect / 2;
+  camera.right = viewHeight * aspect / 2;
+  camera.top = viewHeight / 2;
+  camera.bottom = -viewHeight / 2;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  resizeInventoryRenderer();
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+window.__fabricaDebug = {
+  scene,
+  camera,
+  renderer,
+  furnitureRoots,
+  get selectedFurniture() { return selectedFurniture; },
+  currentGroundPoint,
+  updateMovingFurniture,
+  placeNewFurnitureInMoveMode
+};
+</script>
+</body>
+</html>
