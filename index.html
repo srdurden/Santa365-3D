@@ -693,10 +693,10 @@ santa.position.set(-1.45, 0, 3.4);
 santa.userData.forwardAxis = '+z';
 
 // Botas, piernas y abrigo: una silueta redondeada y reconocible incluso desde lejos.
-box('santa-boot-left', { x: 0.42, y: 0.25, z: 0.62 }, { x: -0.31, y: 0.13, z: 0.12 }, matLeather, santa, true, true);
-box('santa-boot-right', { x: 0.42, y: 0.25, z: 0.62 }, { x: 0.31, y: 0.13, z: 0.12 }, matLeather, santa, true, true);
-box('santa-leg-left', { x: 0.36, y: 0.48, z: 0.4 }, { x: -0.28, y: 0.46, z: 0 }, matRed, santa, true, true);
-box('santa-leg-right', { x: 0.36, y: 0.48, z: 0.4 }, { x: 0.28, y: 0.46, z: 0 }, matRed, santa, true, true);
+const santaLeftBoot = box('santa-boot-left', { x: 0.42, y: 0.25, z: 0.62 }, { x: -0.31, y: 0.13, z: 0.12 }, matLeather, santa, true, true);
+const santaRightBoot = box('santa-boot-right', { x: 0.42, y: 0.25, z: 0.62 }, { x: 0.31, y: 0.13, z: 0.12 }, matLeather, santa, true, true);
+const santaLeftLeg = box('santa-leg-left', { x: 0.36, y: 0.48, z: 0.4 }, { x: -0.28, y: 0.46, z: 0 }, matRed, santa, true, true);
+const santaRightLeg = box('santa-leg-right', { x: 0.36, y: 0.48, z: 0.4 }, { x: 0.28, y: 0.46, z: 0 }, matRed, santa, true, true);
 sphere('santa-coat', 0.68, { x: 1.08, y: 1.12, z: 0.86 }, { x: 0, y: 1.05, z: 0 }, matRed, santa);
 cylinder('santa-coat-fur', 0.69, 0.72, 0.18, { x: 0, y: 0.58, z: 0 }, matBeard, santa);
 box('santa-coat-trim', { x: 0.16, y: 0.82, z: 0.08 }, { x: 0, y: 1.08, z: 0.59 }, matBeard, santa, true, true);
@@ -709,8 +709,8 @@ const santaLeftArm = cylinder('santa-arm-left', 0.22, 0.25, 0.92, { x: -0.75, y:
 santaLeftArm.rotation.z = -0.22;
 const santaRightArm = cylinder('santa-arm-right', 0.22, 0.25, 0.92, { x: 0.75, y: 1.17, z: 0 }, matRed, santa);
 santaRightArm.rotation.z = 0.22;
-sphere('santa-mitten-left', 0.24, { x: 1, y: 0.9, z: 1 }, { x: -0.86, y: 0.72, z: 0.05 }, matLeather, santa);
-sphere('santa-mitten-right', 0.24, { x: 1, y: 0.9, z: 1 }, { x: 0.86, y: 0.72, z: 0.05 }, matLeather, santa);
+const santaLeftMitten = sphere('santa-mitten-left', 0.24, { x: 1, y: 0.9, z: 1 }, { x: -0.86, y: 0.72, z: 0.05 }, matLeather, santa);
+const santaRightMitten = sphere('santa-mitten-right', 0.24, { x: 1, y: 0.9, z: 1 }, { x: 0.86, y: 0.72, z: 0.05 }, matLeather, santa);
 sphere('santa-gift-sack', 0.62, { x: 0.88, y: 1.18, z: 0.72 }, { x: -0.38, y: 1.34, z: -0.52 }, matSack, santa);
 cylinder('santa-sack-tie', 0.18, 0.25, 0.26, { x: -0.38, y: 2.02, z: -0.5 }, matGold, santa);
 
@@ -737,6 +737,21 @@ const santaAxe = new THREE.Group();
 santaAxe.name = 'santa-axe';
 santaAxe.position.set(0.92, 1.02, 0.13);
 santaAxe.rotation.z = -0.35;
+const santaPose = {
+  leftArmZ: santaLeftArm.rotation.z,
+  rightArmZ: santaRightArm.rotation.z,
+  leftBootY: santaLeftBoot.position.y,
+  rightBootY: santaRightBoot.position.y,
+  leftLegY: santaLeftLeg.position.y,
+  rightLegY: santaRightLeg.position.y,
+  leftMittenY: santaLeftMitten.position.y,
+  rightMittenY: santaRightMitten.position.y,
+  leftMittenZ: santaLeftMitten.position.z,
+  rightMittenZ: santaRightMitten.position.z
+};
+let santaWalkCycle = 0;
+let santaFacingAngle = santa.rotation.y;
+
 box('axe-handle', { x: 0.12, y: 1.2, z: 0.12 }, { x: 0, y: -0.08, z: 0 }, matWoodDark, santaAxe, true, true);
 box('axe-head', { x: 0.62, y: 0.34, z: 0.2 }, { x: -0.2, y: 0.48, z: 0 }, matRock, santaAxe, true, true);
 box('axe-blade-highlight', { x: 0.08, y: 0.26, z: 0.22 }, { x: -0.49, y: 0.48, z: 0 }, matWhite, santaAxe, true, true);
@@ -1409,7 +1424,8 @@ function chopTree(tree) {
   activeTree = tree;
   chopCooldown = 0.42;
   axeSwing = 1;
-  santa.rotation.y = Math.atan2(tree.position.x - santa.position.x, tree.position.z - santa.position.z);
+  santaFacingAngle = Math.atan2(tree.position.x - santa.position.x, tree.position.z - santa.position.z);
+  santa.rotation.y = santaFacingAngle;
   tree.userData.health -= 1;
   tree.scale.multiplyScalar(0.96);
 
@@ -1432,7 +1448,6 @@ function performChopAction() {
 function updateTreeInteraction(dt) {
   chopCooldown = Math.max(0, chopCooldown - dt);
   axeSwing = Math.max(0, axeSwing - dt * 3.5);
-  santaAxe.rotation.z = -0.35 - Math.sin(axeSwing * Math.PI) * 1.35;
 
   for (const tree of treeRoots) {
     if (!tree.userData.falling) continue;
@@ -1548,29 +1563,74 @@ function keyboardDirection() {
 }
 
 function moveSantaWithCollision(direction, step) {
-  if (direction.lengthSq() === 0) return false;
+  if (direction.lengthSq() < 0.000001 || step <= 0) return false;
   direction.normalize();
-  const next = santa.position.clone().addScaledVector(direction, step);
+  const previousPosition = santa.position.clone();
+  const next = previousPosition.clone().addScaledVector(direction, step);
   next.y = 0;
 
   if (canSantaStandAt(next)) {
     santa.position.copy(next);
   } else {
-    const slideX = new THREE.Vector3(next.x, 0, santa.position.z);
-    const slideZ = new THREE.Vector3(santa.position.x, 0, next.z);
+    const slideX = new THREE.Vector3(next.x, 0, previousPosition.z);
+    const slideZ = new THREE.Vector3(previousPosition.x, 0, next.z);
 
     if (canSantaStandAt(slideX)) {
-      santa.position.x = slideX.x;
+      santa.position.copy(slideX);
     } else if (canSantaStandAt(slideZ)) {
-      santa.position.z = slideZ.z;
+      santa.position.copy(slideZ);
     } else {
-      santaTarget.copy(santa.position);
+      santaTarget.copy(previousPosition);
       return false;
     }
   }
 
-  santa.rotation.y = Math.atan2(direction.x, direction.z);
-  return true;
+  // La orientación depende del desplazamiento real. Así, una colisión, un vector
+  // residual del destino o el estado de reposo nunca hacen que Santa se dé la vuelta.
+  const actualMovement = santa.position.clone().sub(previousPosition);
+  actualMovement.y = 0;
+  if (actualMovement.lengthSq() > 0.000001) {
+    santaFacingAngle = Math.atan2(actualMovement.x, actualMovement.z);
+    santa.rotation.y = santaFacingAngle;
+    return true;
+  }
+
+  santa.rotation.y = santaFacingAngle;
+  return false;
+}
+
+function updateSantaAnimation(dt, isMoving) {
+  const actionStrength = axeSwing > 0 ? Math.sin(axeSwing * Math.PI) : 0;
+  const blend = 1 - Math.exp(-dt * 14);
+
+  if (isMoving && actionStrength === 0) santaWalkCycle += dt * 11;
+  const stride = isMoving && actionStrength === 0 ? Math.sin(santaWalkCycle) : 0;
+  const stepLiftLeft = Math.max(0, stride) * 0.12;
+  const stepLiftRight = Math.max(0, -stride) * 0.12;
+
+  santaLeftLeg.rotation.x = THREE.MathUtils.lerp(santaLeftLeg.rotation.x, stride * 0.38, blend);
+  santaRightLeg.rotation.x = THREE.MathUtils.lerp(santaRightLeg.rotation.x, -stride * 0.38, blend);
+  santaLeftBoot.rotation.x = THREE.MathUtils.lerp(santaLeftBoot.rotation.x, stride * 0.28, blend);
+  santaRightBoot.rotation.x = THREE.MathUtils.lerp(santaRightBoot.rotation.x, -stride * 0.28, blend);
+  santaLeftLeg.position.y = THREE.MathUtils.lerp(santaLeftLeg.position.y, santaPose.leftLegY + stepLiftLeft, blend);
+  santaRightLeg.position.y = THREE.MathUtils.lerp(santaRightLeg.position.y, santaPose.rightLegY + stepLiftRight, blend);
+  santaLeftBoot.position.y = THREE.MathUtils.lerp(santaLeftBoot.position.y, santaPose.leftBootY + stepLiftLeft, blend);
+  santaRightBoot.position.y = THREE.MathUtils.lerp(santaRightBoot.position.y, santaPose.rightBootY + stepLiftRight, blend);
+
+  const walkArmSwing = stride * 0.42;
+  const chopWindup = actionStrength * 1.05;
+  santaLeftArm.rotation.x = THREE.MathUtils.lerp(santaLeftArm.rotation.x, -walkArmSwing + chopWindup * 0.35, blend);
+  santaRightArm.rotation.x = THREE.MathUtils.lerp(santaRightArm.rotation.x, walkArmSwing - chopWindup, blend);
+  santaLeftArm.rotation.z = THREE.MathUtils.lerp(santaLeftArm.rotation.z, santaPose.leftArmZ - actionStrength * 0.18, blend);
+  santaRightArm.rotation.z = THREE.MathUtils.lerp(santaRightArm.rotation.z, santaPose.rightArmZ + actionStrength * 0.28, blend);
+  santaLeftMitten.position.y = THREE.MathUtils.lerp(santaLeftMitten.position.y, santaPose.leftMittenY + actionStrength * 0.32, blend);
+  santaRightMitten.position.y = THREE.MathUtils.lerp(santaRightMitten.position.y, santaPose.rightMittenY + actionStrength * 0.58, blend);
+  santaLeftMitten.position.z = THREE.MathUtils.lerp(santaLeftMitten.position.z, santaPose.leftMittenZ - walkArmSwing * 0.3, blend);
+  santaRightMitten.position.z = THREE.MathUtils.lerp(santaRightMitten.position.z, santaPose.rightMittenZ + walkArmSwing * 0.3 + actionStrength * 0.18, blend);
+
+  santaAxe.rotation.x = THREE.MathUtils.lerp(santaAxe.rotation.x, -actionStrength * 0.75, blend);
+  santaAxe.rotation.z = THREE.MathUtils.lerp(santaAxe.rotation.z, -0.35 - actionStrength * 1.35, blend);
+  santa.rotation.y = santaFacingAngle;
 }
 
 function moveElfWithCollision(target, step) {
@@ -1648,20 +1708,26 @@ function animate() {
   }
 
   const keyDirection = keyboardDirection();
+  let santaMoved = false;
   if (keyDirection.lengthSq() > 0) {
     santaTarget.copy(santa.position);
-    moveSantaWithCollision(keyDirection, dt * santaSpeed);
+    santaMoved = moveSantaWithCollision(keyDirection, dt * santaSpeed);
   } else {
     const direction = santaTarget.clone().sub(santa.position);
     direction.y = 0;
     const distance = direction.length();
     if (distance > 0.04) {
-      moveSantaWithCollision(direction, Math.min(distance, dt * santaSpeed));
+      santaMoved = moveSantaWithCollision(direction, Math.min(distance, dt * santaSpeed));
+    } else {
+      // Elimina los pequeños vectores residuales del destino sin tocar la orientación.
+      santaTarget.copy(santa.position);
+      santa.rotation.y = santaFacingAngle;
     }
   }
 
   updateElfFollower(dt);
   updateTreeInteraction(dt);
+  updateSantaAnimation(dt, santaMoved);
   updateCamera(dt);
 
   renderer.render(scene, camera);
