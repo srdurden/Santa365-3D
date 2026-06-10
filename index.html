@@ -1633,6 +1633,30 @@ function updateSantaAnimation(dt, isMoving) {
   santa.rotation.y = santaFacingAngle;
 }
 
+function updateSantaMovement(dt) {
+  const keyDirection = keyboardDirection();
+  let santaMoved = false;
+  if (keyDirection.lengthSq() > 0) {
+    santaMoved = moveSantaWithCollision(keyDirection, dt * santaSpeed);
+    // El destino debe quedar en la posición alcanzada, no en la del fotograma
+    // anterior. De lo contrario, al soltar la tecla Santa retrocede un paso y
+    // termina mirando exactamente en la dirección contraria.
+    santaTarget.copy(santa.position);
+  } else {
+    const direction = santaTarget.clone().sub(santa.position);
+    direction.y = 0;
+    const distance = direction.length();
+    if (distance > 0.04) {
+      santaMoved = moveSantaWithCollision(direction, Math.min(distance, dt * santaSpeed));
+    } else {
+      // Elimina los pequeños vectores residuales del destino sin tocar la orientación.
+      santaTarget.copy(santa.position);
+      santa.rotation.y = santaFacingAngle;
+    }
+  }
+  return santaMoved;
+}
+
 function moveElfWithCollision(target, step) {
   const direction = target.clone().sub(elf.position);
   direction.y = 0;
@@ -1707,23 +1731,7 @@ function animate() {
     updateMovingFurniture(currentGroundPoint());
   }
 
-  const keyDirection = keyboardDirection();
-  let santaMoved = false;
-  if (keyDirection.lengthSq() > 0) {
-    santaTarget.copy(santa.position);
-    santaMoved = moveSantaWithCollision(keyDirection, dt * santaSpeed);
-  } else {
-    const direction = santaTarget.clone().sub(santa.position);
-    direction.y = 0;
-    const distance = direction.length();
-    if (distance > 0.04) {
-      santaMoved = moveSantaWithCollision(direction, Math.min(distance, dt * santaSpeed));
-    } else {
-      // Elimina los pequeños vectores residuales del destino sin tocar la orientación.
-      santaTarget.copy(santa.position);
-      santa.rotation.y = santaFacingAngle;
-    }
-  }
+  const santaMoved = updateSantaMovement(dt);
 
   updateElfFollower(dt);
   updateTreeInteraction(dt);
