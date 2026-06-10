@@ -59,6 +59,54 @@
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
+    #resourceHud {
+      position: absolute;
+      right: 148px;
+      top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 105px;
+      padding: 10px 15px;
+      border: 2px solid rgba(92, 55, 24, 0.18);
+      border-radius: 18px;
+      background: rgba(255, 244, 213, 0.9);
+      box-shadow: 0 5px 0 rgba(116, 72, 30, 0.22);
+      color: #5d351b;
+      font-size: 17px;
+      font-weight: 850;
+    }
+
+    .woodIcon {
+      width: 30px;
+      height: 18px;
+      border-radius: 8px;
+      background: #9a5b28;
+      box-shadow: inset 0 -4px 0 #6d3b1c, inset 5px 0 0 rgba(255,255,255,0.12);
+      transform: rotate(-8deg);
+    }
+
+    #actionHint {
+      position: fixed;
+      left: calc((100% - 330px) / 2);
+      bottom: 24px;
+      z-index: 12;
+      transform: translate(-50%, 12px);
+      padding: 11px 17px;
+      border-radius: 16px;
+      background: rgba(63, 39, 22, 0.9);
+      color: #fff7dd;
+      font-weight: 800;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    #actionHint.visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
     #gameHost {
       position: fixed;
       left: 0;
@@ -216,6 +264,12 @@
       #dayCounter {
         right: 24px;
       }
+      #resourceHud {
+        right: 120px;
+      }
+      #actionHint {
+        left: calc((100% - 240px) / 2);
+      }
       #buildPopup {
         right: 16px;
         width: 208px;
@@ -229,9 +283,11 @@
 <body>
   <div id="topHud">
     <div id="gameTitle">365 days</div>
+    <div id="resourceHud" aria-label="Madera recogida"><span class="woodIcon"></span><span id="woodCount">0</span></div>
     <div id="dayCounter">1 / 365</div>
   </div>
   <main id="gameHost" aria-label="Escenario 3D"></main>
+  <div id="actionHint" role="status" aria-live="polite">Pulsa E o espacio para talar</div>
   <aside id="sidePanel">
     <button id="inventoryButton" class="sideButton" type="button">inventario</button>
     <button id="buildButton" class="sideButton" type="button">construir</button>
@@ -261,6 +317,8 @@ const inventoryButton = document.getElementById('inventoryButton');
 const buildButton = document.getElementById('buildButton');
 const buildPopup = document.getElementById('buildPopup');
 const inventoryMount = document.getElementById('inventoryMount');
+const woodCountElement = document.getElementById('woodCount');
+const actionHint = document.getElementById('actionHint');
 renderer.setSize(gameHost.clientWidth, gameHost.clientHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -285,6 +343,7 @@ dir.shadow.camera.bottom = -24;
 dir.shadow.camera.near = 1;
 dir.shadow.camera.far = 70;
 scene.add(dir);
+scene.add(dir.target);
 
 const ROOM = {
   minX: -22,
@@ -303,6 +362,15 @@ const matRed = new THREE.MeshStandardMaterial({ color: 0xd22a22, roughness: 0.58
 const matGreen = new THREE.MeshStandardMaterial({ color: 0x1c9a5a, roughness: 0.6 });
 const matBlack = new THREE.MeshStandardMaterial({ color: 0x171313, roughness: 0.62 });
 const matGlass = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffd89a, emissiveIntensity: 0.72, roughness: 0.25 });
+const matGrass = new THREE.MeshStandardMaterial({ color: 0x6f9b48, roughness: 0.98 });
+const matGrassLight = new THREE.MeshStandardMaterial({ color: 0x8bb85d, roughness: 1 });
+const matSnow = new THREE.MeshStandardMaterial({ color: 0xe9f0df, roughness: 0.92 });
+const matTreeTrunk = new THREE.MeshStandardMaterial({ color: 0x74431f, roughness: 0.9 });
+const matTreeCut = new THREE.MeshStandardMaterial({ color: 0xd7a663, roughness: 0.84 });
+const matPineDark = new THREE.MeshStandardMaterial({ color: 0x17603b, roughness: 0.92 });
+const matPine = new THREE.MeshStandardMaterial({ color: 0x258052, roughness: 0.9 });
+const matRock = new THREE.MeshStandardMaterial({ color: 0x778078, roughness: 1 });
+const matBush = new THREE.MeshStandardMaterial({ color: 0x3f7842, roughness: 1 });
 
 const matSelection = new THREE.MeshBasicMaterial({
   color: 0xffffff,
@@ -349,6 +417,122 @@ floor.position.z = 1.5;
 floor.receiveShadow = true;
 floor.name = 'floor';
 scene.add(floor);
+
+const WORLD = { minX: -23, maxX: 104, minZ: -48, maxZ: 48 };
+const DOOR = { minZ: -0.85, maxZ: 4.35 };
+const outdoorGround = new THREE.Mesh(new THREE.PlaneGeometry(82, 96), matGrass);
+outdoorGround.rotation.x = -Math.PI / 2;
+outdoorGround.position.set(63, -0.035, 0);
+outdoorGround.receiveShadow = true;
+outdoorGround.name = 'procedural-outdoor-ground';
+scene.add(outdoorGround);
+
+// Camino que conecta de forma clara la puerta del taller con el bosque.
+box('door-threshold', { x: 2.3, y: 0.14, z: 4.4 }, { x: 22.8, y: 0.04, z: 1.75 }, matWoodDark, scene, true, true);
+const path = new THREE.Mesh(new THREE.PlaneGeometry(31, 4.3), matSnow);
+path.rotation.x = -Math.PI / 2;
+path.position.set(38.5, 0.015, 1.75);
+path.receiveShadow = true;
+scene.add(path);
+
+const treeRoots = [];
+const treeMeshes = [];
+let woodCount = 0;
+let activeTree = null;
+let chopCooldown = 0;
+let axeSwing = 0;
+
+function seededRandom(seed = 365) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function makeTree(x, z, scale = 1) {
+  const tree = new THREE.Group();
+  tree.position.set(x, 0, z);
+  tree.userData.isTree = true;
+  tree.userData.health = 3;
+  tree.userData.wood = Math.max(2, Math.round(3 * scale));
+  tree.userData.radius = 0.72 * scale;
+
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.42 * scale, 0.56 * scale, 3.2 * scale, 8), matTreeTrunk);
+  trunk.position.y = 1.6 * scale;
+  trunk.castShadow = true;
+  trunk.receiveShadow = true;
+  tree.add(trunk);
+
+  for (let level = 0; level < 3; level++) {
+    const crown = new THREE.Mesh(
+      new THREE.ConeGeometry((1.85 - level * 0.3) * scale, 2.6 * scale, 9),
+      level % 2 ? matPine : matPineDark
+    );
+    crown.position.y = (3.0 + level * 1.25) * scale;
+    crown.castShadow = true;
+    crown.receiveShadow = true;
+    tree.add(crown);
+  }
+
+  tree.traverse(obj => {
+    if (obj.isMesh) {
+      obj.userData.treeRoot = tree;
+      treeMeshes.push(obj);
+    }
+  });
+  treeRoots.push(tree);
+  scene.add(tree);
+  return tree;
+}
+
+function makeNature() {
+  const random = seededRandom(365);
+  // Un bosque reproducible: cada recarga conserva el mismo mapa procedural.
+  let planted = 0;
+  for (let attempt = 0; attempt < 180 && planted < 72; attempt++) {
+    const x = 27 + random() * 73;
+    const z = WORLD.minZ + 3 + random() * (WORLD.maxZ - WORLD.minZ - 6);
+    if (x < 57 && Math.abs(z - 1.75) < 4.5) continue;
+    if (treeRoots.some(tree => tree.position.distanceToSquared(new THREE.Vector3(x, 0, z)) < 7.5)) continue;
+    makeTree(x, z, 0.72 + random() * 0.5);
+    planted += 1;
+  }
+
+  for (let i = 0; i < 42; i++) {
+    const x = 25 + random() * 76;
+    const z = WORLD.minZ + 2 + random() * (WORLD.maxZ - WORLD.minZ - 4);
+    if (x < 57 && Math.abs(z - 1.75) < 3.2) continue;
+    const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45 + random() * 0.48, 0), matBush);
+    bush.position.set(x, 0.42, z);
+    bush.scale.y = 0.65;
+    bush.castShadow = true;
+    bush.receiveShadow = true;
+    scene.add(bush);
+  }
+
+  for (let i = 0; i < 24; i++) {
+    const x = 26 + random() * 74;
+    const z = WORLD.minZ + 2 + random() * (WORLD.maxZ - WORLD.minZ - 4);
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35 + random() * 0.5, 0), matRock);
+    rock.position.set(x, 0.24, z);
+    rock.scale.set(1.2, 0.62, 0.9);
+    rock.rotation.y = random() * Math.PI;
+    rock.castShadow = true;
+    rock.receiveShadow = true;
+    scene.add(rock);
+  }
+
+  for (let i = 0; i < 18; i++) {
+    const patch = new THREE.Mesh(new THREE.CircleGeometry(1.2 + random() * 2.2, 18), i % 3 ? matGrassLight : matSnow);
+    patch.rotation.x = -Math.PI / 2;
+    patch.position.set(29 + random() * 70, 0.005, WORLD.minZ + 4 + random() * (WORLD.maxZ - WORLD.minZ - 8));
+    patch.scale.x = 0.55 + random();
+    patch.receiveShadow = true;
+    scene.add(patch);
+  }
+}
+makeNature();
 
 function wallSegment(name, x, z, sx, sz) {
   box(name, { x: sx, y: 2.35, z: sz }, { x, y: 1.175, z }, matWall, scene, true, true);
@@ -450,6 +634,12 @@ santa.position.set(-1.45, 0, 3.4);
 box('santa-red-cube', { x: 1.05, y: 1.05, z: 1.05 }, { x: 0, y: 0.55, z: 0 }, matRed, santa, true, true);
 box('santa-face-trim', { x: 0.55, y: 0.16, z: 0.12 }, { x: 0, y: 0.72, z: -0.56 }, matWhite, santa, true, true);
 box('santa-belt', { x: 1.08, y: 0.12, z: 1.08 }, { x: 0, y: 0.44, z: 0 }, matBlack, santa, true, true);
+const santaAxe = new THREE.Group();
+santaAxe.position.set(0.72, 0.82, 0.05);
+santaAxe.rotation.z = -0.35;
+box('axe-handle', { x: 0.13, y: 1.15, z: 0.13 }, { x: 0, y: -0.1, z: 0 }, matWoodDark, santaAxe, true, true);
+box('axe-head', { x: 0.62, y: 0.32, z: 0.18 }, { x: -0.2, y: 0.48, z: 0 }, matRock, santaAxe, true, true);
+santa.add(santaAxe);
 scene.add(santa);
 
 const elf = new THREE.Group();
@@ -465,6 +655,16 @@ selectionRing.position.y = 0.045;
 selectionRing.visible = false;
 selectionRing.renderOrder = 3000;
 scene.add(selectionRing);
+
+const treeTargetRing = new THREE.Mesh(
+  new THREE.RingGeometry(1.0, 1.18, 32),
+  new THREE.MeshBasicMaterial({ color: 0xffdc72, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+);
+treeTargetRing.rotation.x = -Math.PI / 2;
+treeTargetRing.position.y = 0.06;
+treeTargetRing.visible = false;
+treeTargetRing.renderOrder = 2500;
+scene.add(treeTargetRing);
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -549,6 +749,21 @@ function makeInventorySlot(x, y, size = 0.86) {
   invBox('slot-floor', { x: size - 0.24, y: size - 0.24, z: 0.16 }, { x, y, z: 0.23 }, invMatSlot);
 }
 
+function makeWoodIcon(x, y) {
+  const g = new THREE.Group();
+  g.position.set(x, y, 0.58);
+  g.rotation.z = -0.18;
+  for (let i = 0; i < 3; i++) {
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.72, 10), matTreeTrunk);
+    log.rotation.z = Math.PI / 2;
+    log.position.y = (i - 1) * 0.19;
+    g.add(log);
+  }
+  inventoryScene.add(g);
+  inventoryItemRotators.push(g);
+  return g;
+}
+
 function makeGiftIcon(x, y, colorMat, scale = 1) {
   const g = new THREE.Group();
   g.position.set(x, y, 0.55);
@@ -627,6 +842,7 @@ function makeInventoryPanel() {
   makeGiftIcon(startX, 0.35, invMatRed, 0.74);
   makeGiftIcon(startX + spacing * 2, 0.35 - spacing, invMatGreen, 0.72);
   makeGiftIcon(startX + spacing * 4, -4.35, invMatGold, 0.72);
+  makeWoodIcon(startX + spacing, -4.35);
 }
 makeInventoryPanel();
 
@@ -734,6 +950,19 @@ function clampToRoom(point, margin = 0.8) {
   );
 }
 
+function clampToWorld(point, margin = 0.8) {
+  return new THREE.Vector3(
+    THREE.MathUtils.clamp(point.x, WORLD.minX + margin, WORLD.maxX - margin),
+    0,
+    THREE.MathUtils.clamp(point.z, WORLD.minZ + margin, WORLD.maxZ - margin)
+  );
+}
+
+function pointHitsTree(point, radius, ignoreTree = null) {
+  return treeRoots.some(tree => tree !== ignoreTree && tree.visible && !tree.userData.falling &&
+    point.distanceToSquared(tree.position) < Math.pow(radius + tree.userData.radius, 2));
+}
+
 function getRotatedFootprint(root) {
   const x = root.userData.footprintX || 2;
   const z = root.userData.footprintZ || 2;
@@ -793,10 +1022,21 @@ function nearestFreePoint(point) {
 
 function canCharacterStandAt(point, radius = santaCollisionRadius) {
   const margin = Math.max(0.65, radius + 0.16);
-  const insideRoom =
-    point.x >= ROOM.minX + margin && point.x <= ROOM.maxX - margin &&
+  const withinWorld =
+    point.x >= WORLD.minX + margin && point.x <= WORLD.maxX - margin &&
+    point.z >= WORLD.minZ + margin && point.z <= WORLD.maxZ - margin;
+  if (!withinWorld) return false;
+
+  const inWorkshop = point.x <= ROOM.maxX - margin &&
     point.z >= ROOM.minZ + margin && point.z <= ROOM.maxZ - margin;
-  return insideRoom && !pointHitsFurniture(point, null, radius);
+  const inDoorway = point.x > ROOM.maxX - margin && point.x < ROOM.maxX + 1.25 &&
+    point.z >= DOOR.minZ + radius && point.z <= DOOR.maxZ - radius;
+  const outdoors = point.x >= ROOM.maxX + 1.15;
+  const onWalkableGround = inWorkshop || inDoorway || outdoors;
+
+  return onWalkableGround &&
+    !pointHitsFurniture(point, null, radius) &&
+    !pointHitsTree(point, radius);
 }
 
 function canSantaStandAt(point) {
@@ -972,6 +1212,120 @@ function isPointerOverFurniture(clientX, clientY) {
   return !!pickFurnitureAtPointer(clientX, clientY);
 }
 
+function pickTreeAtPointer(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hit = raycaster.intersectObjects(treeMeshes, false).find(result =>
+    result.object.userData.treeRoot?.visible && !result.object.userData.treeRoot.userData.falling
+  );
+  return hit?.object.userData.treeRoot || null;
+}
+
+function nearestTreeToSanta(maxDistance = 2.65) {
+  let nearest = null;
+  let nearestDistance = maxDistance;
+  for (const tree of treeRoots) {
+    if (!tree.visible || tree.userData.falling) continue;
+    const distance = santa.position.distanceTo(tree.position);
+    if (distance < nearestDistance) {
+      nearest = tree;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
+}
+
+function targetTree(tree) {
+  activeTree = tree;
+  treeTargetRing.visible = true;
+  treeTargetRing.position.x = tree.position.x;
+  treeTargetRing.position.z = tree.position.z;
+  const away = santa.position.clone().sub(tree.position).setY(0);
+  if (away.lengthSq() < 0.01) away.set(-1, 0, 0);
+  away.normalize();
+  santaTarget.copy(tree.position).addScaledVector(away, tree.userData.radius + 1.35);
+  santaTarget.copy(clampToWorld(santaTarget, 0.8));
+}
+
+function leaveStump(tree) {
+  const scale = tree.userData.radius / 0.72;
+  const stump = new THREE.Group();
+  stump.position.copy(tree.position);
+  const bark = new THREE.Mesh(new THREE.CylinderGeometry(0.46 * scale, 0.54 * scale, 0.42, 8), matTreeTrunk);
+  bark.position.y = 0.21;
+  bark.castShadow = true;
+  bark.receiveShadow = true;
+  stump.add(bark);
+  const cut = new THREE.Mesh(new THREE.CylinderGeometry(0.4 * scale, 0.4 * scale, 0.035, 12), matTreeCut);
+  cut.position.y = 0.43;
+  cut.castShadow = true;
+  stump.add(cut);
+  scene.add(stump);
+}
+
+function addWood(amount) {
+  woodCount += amount;
+  woodCountElement.textContent = woodCount;
+  woodCountElement.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.45)', color: '#1c9a5a' }, { transform: 'scale(1)' }],
+    { duration: 420, easing: 'ease-out' }
+  );
+}
+
+function chopTree(tree) {
+  if (!tree || tree.userData.falling || chopCooldown > 0) return;
+  if (santa.position.distanceTo(tree.position) > 2.75) {
+    targetTree(tree);
+    return;
+  }
+
+  activeTree = tree;
+  chopCooldown = 0.42;
+  axeSwing = 1;
+  santa.rotation.y = Math.atan2(tree.position.x - santa.position.x, tree.position.z - santa.position.z);
+  tree.userData.health -= 1;
+  tree.scale.multiplyScalar(0.96);
+
+  if (tree.userData.health <= 0) {
+    tree.userData.falling = true;
+    tree.userData.fallProgress = 0;
+    tree.userData.fallDirection = Math.atan2(tree.position.x - santa.position.x, tree.position.z - santa.position.z) + Math.PI;
+    leaveStump(tree);
+    addWood(tree.userData.wood);
+    activeTree = null;
+    treeTargetRing.visible = false;
+  }
+}
+
+function performChopAction() {
+  const tree = activeTree && !activeTree.userData.falling ? activeTree : nearestTreeToSanta();
+  if (tree) chopTree(tree);
+}
+
+function updateTreeInteraction(dt) {
+  chopCooldown = Math.max(0, chopCooldown - dt);
+  axeSwing = Math.max(0, axeSwing - dt * 3.5);
+  santaAxe.rotation.z = -0.35 - Math.sin(axeSwing * Math.PI) * 1.35;
+
+  for (const tree of treeRoots) {
+    if (!tree.userData.falling) continue;
+    tree.userData.fallProgress = Math.min(1, tree.userData.fallProgress + dt * 1.35);
+    const eased = 1 - Math.pow(1 - tree.userData.fallProgress, 3);
+    tree.rotation.z = Math.cos(tree.userData.fallDirection) * eased * Math.PI * 0.48;
+    tree.rotation.x = Math.sin(tree.userData.fallDirection) * eased * Math.PI * 0.48;
+    if (tree.userData.fallProgress >= 1) tree.visible = false;
+  }
+
+  const nearbyTree = nearestTreeToSanta();
+  actionHint.classList.toggle('visible', !!nearbyTree);
+  if (activeTree && (activeTree.userData.falling || !activeTree.visible)) {
+    activeTree = null;
+    treeTargetRing.visible = false;
+  }
+}
+
 function handlePointerMove(ev) {
   setPointer(ev);
   const point = currentGroundPoint();
@@ -979,7 +1333,9 @@ function handlePointerMove(ev) {
     updateMovingFurniture(point);
     renderer.domElement.style.cursor = 'grabbing';
   } else {
-    renderer.domElement.style.cursor = isPointerOverFurniture(lastPointerClientX, lastPointerClientY) ? 'pointer' : 'default';
+    const interactive = pickTreeAtPointer(lastPointerClientX, lastPointerClientY) ||
+      isPointerOverFurniture(lastPointerClientX, lastPointerClientY);
+    renderer.domElement.style.cursor = interactive ? 'pointer' : 'default';
   }
 }
 
@@ -1000,6 +1356,13 @@ function handlePointerDown(ev) {
     return;
   }
 
+  const tree = pickTreeAtPointer(lastPointerClientX, lastPointerClientY);
+  if (tree) {
+    targetTree(tree);
+    if (santa.position.distanceTo(tree.position) <= 2.75) chopTree(tree);
+    return;
+  }
+
   const root = pickFurnitureAtPointer(lastPointerClientX, lastPointerClientY);
   if (root) {
     beginFurnitureMove(root);
@@ -1007,8 +1370,9 @@ function handlePointerDown(ev) {
   }
 
   if (point) {
-    const destination = clampToRoom(point, 0.85);
-    santaTarget.copy(nearestFreePoint(destination));
+    activeTree = null;
+    treeTargetRing.visible = false;
+    santaTarget.copy(clampToWorld(point, 0.85));
   }
 }
 
@@ -1020,6 +1384,12 @@ renderer.domElement.addEventListener('pointerdown', handlePointerDown);
 document.addEventListener('contextmenu', ev => ev.preventDefault());
 
 document.addEventListener('keydown', ev => {
+  if ((ev.key === 'e' || ev.key === 'E' || ev.code === 'Space') && !selectedFurniture) {
+    ev.preventDefault();
+    if (!ev.repeat) performChopAction();
+    return;
+  }
+
   if (ev.key in keyState) {
     ev.preventDefault();
 
@@ -1110,11 +1480,11 @@ function updateElfFollower(dt) {
   let desired = santa.position.clone()
     .addScaledVector(forward, -1.45)
     .addScaledVector(right, 0.95);
-  desired = clampToRoom(desired, 0.8);
+  desired = clampToWorld(desired, 0.8);
 
   if (!canElfStandAt(desired)) {
     desired = santa.position.clone().addScaledVector(forward, -1.85);
-    desired = clampToRoom(desired, 0.8);
+    desired = clampToWorld(desired, 0.8);
   }
 
   if (!canElfStandAt(desired)) {
@@ -1125,6 +1495,23 @@ function updateElfFollower(dt) {
   if (distanceToSanta > 1.15) {
     moveElfWithCollision(desired, dt * elfSpeed);
   }
+}
+
+const cameraFocus = new THREE.Vector3(0, 0, 1.5);
+
+function updateCamera(dt) {
+  const outdoors = santa.position.x > 10;
+  const desiredX = outdoors ? THREE.MathUtils.clamp(santa.position.x, 0, WORLD.maxX - 12) : 0;
+  const desiredZ = outdoors ? THREE.MathUtils.clamp(santa.position.z, WORLD.minZ + 12, WORLD.maxZ - 12) : 1.5;
+  const smoothing = 1 - Math.exp(-dt * 3.2);
+  cameraFocus.x = THREE.MathUtils.lerp(cameraFocus.x, desiredX, smoothing);
+  cameraFocus.z = THREE.MathUtils.lerp(cameraFocus.z, desiredZ, smoothing);
+  camera.position.set(cameraFocus.x, 38, cameraFocus.z + 31);
+  camera.lookAt(cameraFocus.x, 0, cameraFocus.z);
+
+  dir.position.set(cameraFocus.x - 10, 22, cameraFocus.z + 14);
+  dir.target.position.set(cameraFocus.x, 0, cameraFocus.z);
+  dir.target.updateMatrixWorld();
 }
 
 function animate() {
@@ -1149,6 +1536,8 @@ function animate() {
   }
 
   updateElfFollower(dt);
+  updateTreeInteraction(dt);
+  updateCamera(dt);
 
   renderer.render(scene, camera);
   if (inventoryOpen) renderInventory();
@@ -1179,7 +1568,11 @@ window.__fabricaDebug = {
   get selectedFurniture() { return selectedFurniture; },
   currentGroundPoint,
   updateMovingFurniture,
-  placeNewFurnitureInMoveMode
+  placeNewFurnitureInMoveMode,
+  treeRoots,
+  get woodCount() { return woodCount; },
+  chopTree,
+  targetTree
 };
 </script>
 </body>
