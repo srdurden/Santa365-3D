@@ -279,6 +279,197 @@
       cursor: default;
     }
 
+
+
+    #levelHud {
+      position: fixed;
+      z-index: 12;
+      pointer-events: none;
+      left: 28px;
+      top: 78px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 190px;
+      padding: 8px 12px;
+      border: 2px solid rgba(92, 55, 24, 0.18);
+      border-radius: 14px;
+      background: rgba(255, 244, 213, 0.92);
+      box-shadow: 0 4px 0 rgba(116, 72, 30, 0.22);
+      color: #5d351b;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .xpTrack,
+    .battleBarTrack {
+      overflow: hidden;
+      flex: 1;
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(74, 43, 22, 0.22);
+      box-shadow: inset 0 1px 2px rgba(48, 26, 12, 0.25);
+    }
+
+    #xpFill,
+    .battleBarFill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f5b83d, #ffe282);
+      transition: width 350ms ease;
+    }
+
+    #battleView {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      padding: clamp(18px, 4vw, 54px);
+      box-sizing: border-box;
+      color: #fff8dd;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(48, 116, 78, 0.2), transparent 35%),
+        linear-gradient(180deg, #102c2f 0%, #174337 53%, #101d22 100%);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 240ms ease, visibility 240ms ease;
+    }
+
+    #battleView.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .battleScene {
+      position: relative;
+      min-height: 300px;
+      overflow: hidden;
+      border: 4px solid #e8c77d;
+      border-radius: 24px 24px 8px 8px;
+      background:
+        radial-gradient(ellipse at 50% 102%, #557a45 0 22%, transparent 23%),
+        linear-gradient(180deg, #315c68 0 49%, #294f36 50% 100%);
+      box-shadow: inset 0 0 60px rgba(8, 18, 20, 0.58), 0 16px 0 rgba(9, 20, 20, 0.5);
+    }
+
+    .battleScene::before {
+      content: '';
+      position: absolute;
+      inset: auto 0 0;
+      height: 46%;
+      opacity: 0.65;
+      background: repeating-linear-gradient(170deg, transparent 0 28px, rgba(163, 207, 117, 0.13) 29px 31px);
+    }
+
+    .battleNameplate {
+      position: absolute;
+      top: 20px;
+      width: min(300px, 38%);
+      padding: 12px 16px;
+      box-sizing: border-box;
+      border: 3px solid #e9ca82;
+      border-radius: 10px;
+      background: rgba(14, 29, 31, 0.9);
+      box-shadow: 5px 5px 0 rgba(4, 10, 12, 0.55);
+      font-family: Georgia, serif;
+      font-size: clamp(15px, 2vw, 21px);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .battleNameplate.player { left: 22px; }
+    .battleNameplate.enemy { right: 22px; }
+    .battleNameplate .battleBarTrack { height: 11px; margin-top: 8px; }
+    #santaHpFill { background: linear-gradient(90deg, #3acb73, #91ed8d); }
+    #enemyHpFill { background: linear-gradient(90deg, #d9503d, #ff9b5e); }
+
+    .fighter {
+      position: absolute;
+      bottom: 12%;
+      display: grid;
+      place-items: center;
+      width: 32%;
+      height: 52%;
+      filter: drop-shadow(0 16px 8px rgba(0,0,0,0.35));
+      transform-origin: 50% 100%;
+    }
+
+    #battleSanta { left: 8%; }
+    #battleEnemy { right: 8%; }
+    .fighterSprite {
+      font-size: clamp(84px, 15vw, 180px);
+      line-height: 1;
+      user-select: none;
+    }
+    #battleEnemy .fighterSprite { font-size: clamp(92px, 17vw, 200px); }
+    .fighter.attack { animation: battleAttack 420ms ease; }
+    .fighter.hit { animation: battleHit 380ms ease; }
+    .fighter.guard { animation: battleGuard 520ms ease; }
+    .fighter.defeated { animation: battleDefeat 700ms ease forwards; }
+
+    @keyframes battleAttack { 50% { transform: translateX(28%) scale(1.08); } }
+    @keyframes battleHit { 25%, 75% { transform: translateX(-12px); filter: brightness(2) saturate(0); } 50% { transform: translateX(12px); } }
+    @keyframes battleGuard { 50% { transform: scale(1.08); filter: drop-shadow(0 0 18px #8ddcff); } }
+    @keyframes battleDefeat { to { transform: translateY(55px) rotate(8deg) scale(0.55); opacity: 0; } }
+
+    .battleUi {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+      font-family: Georgia, serif;
+    }
+
+    #battleMessage,
+    .battleCommands {
+      min-height: 128px;
+      padding: 18px 22px;
+      border: 4px solid #e8c77d;
+      border-radius: 8px 8px 20px 20px;
+      background: #12252c;
+      box-shadow: inset 0 0 0 3px #28434a, 0 8px 0 rgba(5, 12, 14, 0.5);
+      box-sizing: border-box;
+    }
+
+    #battleMessage {
+      font-size: clamp(18px, 2.2vw, 25px);
+      line-height: 1.45;
+    }
+
+    .battleCommands {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .battleCommand {
+      border: 2px solid #cfab61;
+      border-radius: 8px;
+      background: #29434a;
+      color: #fff6d6;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .battleCommand:first-child { grid-column: 1 / -1; }
+    .battleCommand:hover:not(:disabled),
+    .battleCommand:focus-visible { background: #466c68; outline: 3px solid #fff0a7; outline-offset: 2px; }
+    .battleCommand:disabled { opacity: 0.42; cursor: wait; }
+
+    @media (max-width: 700px) {
+      #battleView { padding: 12px; }
+      .battleUi { grid-template-columns: 1fr; }
+      #battleMessage, .battleCommands { min-height: 100px; }
+      .battleScene { min-height: 260px; }
+      .battleNameplate { width: 43%; padding: 9px; }
+    }
+
     @media (max-width: 900px) {
       #gameHost {
         right: 240px;
@@ -313,6 +504,7 @@
     <div id="dayCounter">1 / 365</div>
   </div>
   <main id="gameHost" aria-label="Escenario 3D"></main>
+  <div id="levelHud" aria-label="Nivel y experiencia"><span id="levelText">Nv. 1</span><div class="xpTrack"><div id="xpFill"></div></div><span id="xpText">0 / 40 XP</span></div>
   <div id="actionHint" role="status" aria-live="polite">Pulsa E o espacio para talar</div>
   <aside id="sidePanel">
     <button id="inventoryButton" class="sideButton" type="button">inventario</button>
@@ -333,6 +525,31 @@
     </div>
     <div id="buildMessage" role="status" aria-live="polite"></div>
   </div>
+
+  <section id="battleView" aria-label="Combate por turnos" aria-hidden="true">
+    <div class="battleScene">
+      <div class="battleNameplate player">
+        <span id="battleSantaName">Santa · Nv. 1</span>
+        <div class="battleBarTrack"><div id="santaHpFill" class="battleBarFill"></div></div>
+        <small id="santaHpText">48 / 48 PV</small>
+      </div>
+      <div class="battleNameplate enemy">
+        <span id="battleEnemyName">Monstruo</span>
+        <div class="battleBarTrack"><div id="enemyHpFill" class="battleBarFill"></div></div>
+        <small id="enemyHpText">30 / 30 PV</small>
+      </div>
+      <div id="battleSanta" class="fighter"><span class="fighterSprite" aria-hidden="true">🎅</span></div>
+      <div id="battleEnemy" class="fighter"><span id="battleEnemySprite" class="fighterSprite" aria-hidden="true">👹</span></div>
+    </div>
+    <div class="battleUi">
+      <div id="battleMessage" role="status" aria-live="polite">¡Un monstruo corta el paso!</div>
+      <div class="battleCommands" aria-label="Comandos de combate">
+        <button class="battleCommand" type="button" data-battle-command="punch">👊 Puñetazo</button>
+        <button class="battleCommand" type="button" data-battle-command="guard">🛡️ Protegerse</button>
+        <button class="battleCommand" type="button" data-battle-command="flee">💨 Huir</button>
+      </div>
+    </div>
+  </section>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
@@ -350,6 +567,22 @@ const buildMessage = document.getElementById('buildMessage');
 const inventoryMount = document.getElementById('inventoryMount');
 const woodCountElement = document.getElementById('woodCount');
 const actionHint = document.getElementById('actionHint');
+const battleView = document.getElementById('battleView');
+const battleMessage = document.getElementById('battleMessage');
+const battleSantaName = document.getElementById('battleSantaName');
+const battleEnemyName = document.getElementById('battleEnemyName');
+const santaHpFill = document.getElementById('santaHpFill');
+const enemyHpFill = document.getElementById('enemyHpFill');
+const santaHpText = document.getElementById('santaHpText');
+const enemyHpText = document.getElementById('enemyHpText');
+const battleSanta = document.getElementById('battleSanta');
+const battleEnemy = document.getElementById('battleEnemy');
+const battleEnemySprite = document.getElementById('battleEnemySprite');
+const battleCommandButtons = [...document.querySelectorAll('[data-battle-command]')];
+const levelText = document.getElementById('levelText');
+const xpFill = document.getElementById('xpFill');
+const xpText = document.getElementById('xpText');
+
 renderer.setSize(gameHost.clientWidth, gameHost.clientHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -591,6 +824,64 @@ function makeNature() {
   }
 }
 makeNature();
+
+
+const enemyRoots = [];
+const enemyMaterials = {
+  purple: new THREE.MeshStandardMaterial({ color: 0x74488f, roughness: 0.78 }),
+  blue: new THREE.MeshStandardMaterial({ color: 0x397a8d, roughness: 0.76 }),
+  orange: new THREE.MeshStandardMaterial({ color: 0xc86a2d, roughness: 0.82 }),
+  eye: new THREE.MeshStandardMaterial({ color: 0xffe7a8, emissive: 0xffa82f, emissiveIntensity: 0.28, roughness: 0.5 })
+};
+const ENEMY_TYPES = [
+  { name: 'Trol del abeto', sprite: '👹', color: 'purple', maxHp: 34, attack: 8, xp: 22 },
+  { name: 'Limo escarchado', sprite: '👾', color: 'blue', maxHp: 28, attack: 7, xp: 18 },
+  { name: 'Krampus pequeño', sprite: '😈', color: 'orange', maxHp: 40, attack: 9, xp: 28 }
+];
+
+function makeForestEnemy(x, z, typeIndex, orbitRadius, speed) {
+  const type = ENEMY_TYPES[typeIndex % ENEMY_TYPES.length];
+  const enemy = new THREE.Group();
+  enemy.name = `forest-enemy-${enemyRoots.length + 1}`;
+  enemy.userData = {
+    isEnemy: true,
+    type,
+    active: true,
+    orbitCenter: new THREE.Vector3(x, 0, z),
+    orbitRadius,
+    orbitAngle: enemyRoots.length * 1.37,
+    orbitSpeed: speed,
+    encounterCooldown: 1.5,
+    bobOffset: enemyRoots.length * 0.8
+  };
+
+  sphere('enemy-body', 0.72, { x: 1, y: 1.08, z: 0.86 }, { x: 0, y: 1.0, z: 0 }, enemyMaterials[type.color], enemy);
+  sphere('enemy-eye-left', 0.12, { x: 1, y: 1, z: 0.55 }, { x: -0.25, y: 1.18, z: 0.62 }, enemyMaterials.eye, enemy);
+  sphere('enemy-eye-right', 0.12, { x: 1, y: 1, z: 0.55 }, { x: 0.25, y: 1.18, z: 0.62 }, enemyMaterials.eye, enemy);
+  sphere('enemy-pupil-left', 0.052, { x: 1, y: 1, z: 0.5 }, { x: -0.25, y: 1.18, z: 0.72 }, matBlack, enemy);
+  sphere('enemy-pupil-right', 0.052, { x: 1, y: 1, z: 0.5 }, { x: 0.25, y: 1.18, z: 0.72 }, matBlack, enemy);
+  const hornLeft = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.65, 7), matGold);
+  hornLeft.position.set(-0.43, 1.82, 0); hornLeft.rotation.z = 0.32; hornLeft.castShadow = true; enemy.add(hornLeft);
+  const hornRight = hornLeft.clone();
+  hornRight.position.x = 0.43; hornRight.rotation.z = -0.32; enemy.add(hornRight);
+  cylinder('enemy-leg-left', 0.18, 0.23, 0.48, { x: -0.35, y: 0.3, z: 0 }, matLeather, enemy);
+  cylinder('enemy-leg-right', 0.18, 0.23, 0.48, { x: 0.35, y: 0.3, z: 0 }, matLeather, enemy);
+
+  enemy.position.copy(enemy.userData.orbitCenter);
+  enemyRoots.push(enemy);
+  scene.add(enemy);
+  return enemy;
+}
+
+function spawnForestEnemies() {
+  makeForestEnemy(43, -12, 0, 3.2, 0.48);
+  makeForestEnemy(56, 17, 1, 4.0, -0.38);
+  makeForestEnemy(70, -25, 2, 3.4, 0.42);
+  makeForestEnemy(83, 9, 0, 5.0, -0.32);
+  makeForestEnemy(94, 31, 1, 3.0, 0.52);
+}
+
+spawnForestEnemies();
 
 function wallSegment(name, x, z, sx, sz) {
   box(name, { x: sx, y: 2.35, z: sz }, { x, y: 1.175, z }, matWall, scene, true, true);
@@ -1058,6 +1349,214 @@ const keyState = {
   ArrowRight: false
 };
 
+const playerStats = { level: 1, xp: 0, xpToNext: 40, maxHp: 48, hp: 48 };
+let battleActive = false;
+let battleLocked = false;
+let battleGuarding = false;
+let currentBattleEnemy = null;
+let currentEnemyHp = 0;
+
+function updateExperienceHud() {
+  levelText.textContent = `Nv. ${playerStats.level}`;
+  xpText.textContent = `${playerStats.xp} / ${playerStats.xpToNext} XP`;
+  xpFill.style.width = `${Math.min(100, playerStats.xp / playerStats.xpToNext * 100)}%`;
+}
+
+function updateBattleHud() {
+  if (!currentBattleEnemy) return;
+  const type = currentBattleEnemy.userData.type;
+  battleSantaName.textContent = `Santa · Nv. ${playerStats.level}`;
+  battleEnemyName.textContent = type.name;
+  santaHpText.textContent = `${Math.max(0, playerStats.hp)} / ${playerStats.maxHp} PV`;
+  enemyHpText.textContent = `${Math.max(0, currentEnemyHp)} / ${type.maxHp} PV`;
+  santaHpFill.style.width = `${Math.max(0, playerStats.hp / playerStats.maxHp * 100)}%`;
+  enemyHpFill.style.width = `${Math.max(0, currentEnemyHp / type.maxHp * 100)}%`;
+}
+
+function setBattleCommandsEnabled(enabled) {
+  battleLocked = !enabled;
+  battleCommandButtons.forEach(button => { button.disabled = !enabled; });
+}
+
+function animateFighter(element, className) {
+  element.classList.remove('attack', 'hit', 'guard');
+  void element.offsetWidth;
+  element.classList.add(className);
+  window.setTimeout(() => element.classList.remove(className), 520);
+}
+
+function startBattle(enemy) {
+  if (battleActive || !enemy?.userData.active) return;
+  battleActive = true;
+  currentBattleEnemy = enemy;
+  currentEnemyHp = enemy.userData.type.maxHp;
+  battleGuarding = false;
+  santaTarget.copy(santa.position);
+  clearArrowKeyState();
+  setBuildPopupOpen(false);
+  battleEnemySprite.textContent = enemy.userData.type.sprite;
+  battleEnemy.className = 'fighter';
+  battleSanta.className = 'fighter';
+  battleMessage.textContent = `¡${enemy.userData.type.name} aparece entre los árboles!`;
+  battleView.classList.add('active');
+  battleView.setAttribute('aria-hidden', 'false');
+  updateBattleHud();
+  setBattleCommandsEnabled(true);
+  battleCommandButtons[0].focus();
+}
+
+function grantExperience(amount) {
+  playerStats.xp += amount;
+  let leveledUp = false;
+  while (playerStats.xp >= playerStats.xpToNext) {
+    playerStats.xp -= playerStats.xpToNext;
+    playerStats.level += 1;
+    playerStats.xpToNext = Math.round(playerStats.xpToNext * 1.35);
+    playerStats.maxHp += 8;
+    playerStats.hp = playerStats.maxHp;
+    leveledUp = true;
+  }
+  updateExperienceHud();
+  return leveledUp;
+}
+
+function finishBattle(result) {
+  if (!currentBattleEnemy) return;
+  const enemy = currentBattleEnemy;
+  enemy.userData.encounterCooldown = 3;
+  if (result === 'win') {
+    enemy.userData.active = false;
+    enemy.visible = false;
+    window.setTimeout(() => {
+      enemy.userData.active = true;
+      enemy.userData.encounterCooldown = 3;
+      enemy.visible = true;
+      enemy.position.copy(enemy.userData.orbitCenter);
+    }, 14000);
+  } else {
+    const away = santa.position.clone().sub(enemy.position).setY(0);
+    if (away.lengthSq() < 0.01) away.set(-1, 0, 0);
+    santa.position.addScaledVector(away.normalize(), 2.4);
+    santa.position.copy(clampToWorld(santa.position, 0.85));
+    santaTarget.copy(santa.position);
+  }
+  battleView.classList.remove('active');
+  battleView.setAttribute('aria-hidden', 'true');
+  battleActive = false;
+  battleLocked = false;
+  battleGuarding = false;
+  currentBattleEnemy = null;
+  clearArrowKeyState();
+}
+
+function winBattle() {
+  const type = currentBattleEnemy.userData.type;
+  setBattleCommandsEnabled(false);
+  battleEnemy.classList.add('defeated');
+  const leveledUp = grantExperience(type.xp);
+  battleMessage.textContent = `¡Victoria! Santa gana ${type.xp} XP.${leveledUp ? ` ¡Sube al nivel ${playerStats.level}!` : ''}`;
+  window.setTimeout(() => finishBattle('win'), 1450);
+}
+
+function enemyTurn() {
+  if (!battleActive || currentEnemyHp <= 0) return;
+  const type = currentBattleEnemy.userData.type;
+  const rawDamage = type.attack + Math.floor(Math.random() * 5);
+  const damage = battleGuarding ? Math.max(1, Math.round(rawDamage * 0.32)) : rawDamage;
+  animateFighter(battleEnemy, 'attack');
+  window.setTimeout(() => {
+    animateFighter(battleSanta, battleGuarding ? 'guard' : 'hit');
+    playerStats.hp = Math.max(0, playerStats.hp - damage);
+    updateBattleHud();
+    if (playerStats.hp <= 0) {
+      battleMessage.textContent = 'Santa se queda sin fuerzas… Despierta a salvo en el taller.';
+      setBattleCommandsEnabled(false);
+      window.setTimeout(() => {
+        playerStats.hp = playerStats.maxHp;
+        santa.position.set(-1.45, 0, 3.4);
+        elf.position.set(0.75, 0, 3.25);
+        santaTarget.copy(santa.position);
+        finishBattle('defeat');
+      }, 1500);
+      return;
+    }
+    battleMessage.textContent = battleGuarding
+      ? `${type.name} ataca, pero Santa bloquea casi todo. Pierde ${damage} PV.`
+      : `${type.name} ataca. Santa pierde ${damage} PV.`;
+    battleGuarding = false;
+    setBattleCommandsEnabled(true);
+  }, 430);
+}
+
+function performBattleCommand(command) {
+  if (!battleActive || battleLocked || !currentBattleEnemy) return;
+  setBattleCommandsEnabled(false);
+  if (command === 'punch') {
+    const damage = 9 + playerStats.level * 2 + Math.floor(Math.random() * 5);
+    animateFighter(battleSanta, 'attack');
+    battleMessage.textContent = '¡Santa prepara un puñetazo con toda su fuerza!';
+    window.setTimeout(() => {
+      animateFighter(battleEnemy, 'hit');
+      currentEnemyHp = Math.max(0, currentEnemyHp - damage);
+      updateBattleHud();
+      battleMessage.textContent = `¡Puñetazo! ${currentBattleEnemy.userData.type.name} recibe ${damage} de daño.`;
+      if (currentEnemyHp <= 0) winBattle();
+      else window.setTimeout(enemyTurn, 650);
+    }, 390);
+    return;
+  }
+  if (command === 'guard') {
+    battleGuarding = true;
+    animateFighter(battleSanta, 'guard');
+    battleMessage.textContent = 'Santa se protege tras su saco de regalos.';
+    window.setTimeout(enemyTurn, 650);
+    return;
+  }
+  if (command === 'flee') {
+    if (Math.random() < 0.68) {
+      battleMessage.textContent = '¡Santa logra escabullirse entre los abetos!';
+      window.setTimeout(() => finishBattle('flee'), 850);
+    } else {
+      battleMessage.textContent = '¡No hay escapatoria! El monstruo bloquea el camino.';
+      window.setTimeout(enemyTurn, 650);
+    }
+  }
+}
+
+function updateForestEnemies(dt) {
+  if (battleActive) return;
+  for (const enemy of enemyRoots) {
+    if (!enemy.userData.active) continue;
+    enemy.userData.encounterCooldown = Math.max(0, enemy.userData.encounterCooldown - dt);
+    enemy.userData.orbitAngle += enemy.userData.orbitSpeed * dt;
+    const next = new THREE.Vector3(
+      enemy.userData.orbitCenter.x + Math.cos(enemy.userData.orbitAngle) * enemy.userData.orbitRadius,
+      0,
+      enemy.userData.orbitCenter.z + Math.sin(enemy.userData.orbitAngle) * enemy.userData.orbitRadius
+    );
+    const movement = next.clone().sub(enemy.position);
+    if (!pointHitsTree(next, 0.7)) {
+      enemy.position.x = next.x;
+      enemy.position.z = next.z;
+    } else {
+      enemy.userData.orbitSpeed *= -1;
+    }
+    enemy.position.y = Math.sin(clock.elapsedTime * 3 + enemy.userData.bobOffset) * 0.08;
+    if (movement.lengthSq() > 0.0001) enemy.rotation.y = Math.atan2(movement.x, movement.z);
+    if (enemy.userData.encounterCooldown <= 0 && santa.position.distanceTo(enemy.position) < 1.35) {
+      startBattle(enemy);
+      break;
+    }
+  }
+}
+
+battleView.addEventListener('click', event => {
+  const button = event.target.closest('[data-battle-command]');
+  if (button) performBattleCommand(button.dataset.battleCommand);
+});
+updateExperienceHud();
+
+
 function setPointer(ev) {
   const source = ev.touches ? ev.touches[0] : ev;
   if (!source) return;
@@ -1467,6 +1966,7 @@ function updateTreeInteraction(dt) {
 }
 
 function handlePointerMove(ev) {
+  if (battleActive) return;
   setPointer(ev);
   const point = currentGroundPoint();
   if (selectedFurniture) {
@@ -1480,6 +1980,7 @@ function handlePointerMove(ev) {
 }
 
 function handlePointerDown(ev) {
+  if (battleActive) return;
   setPointer(ev);
 
   if (ev.button === 2) {
@@ -1524,6 +2025,12 @@ renderer.domElement.addEventListener('pointerdown', handlePointerDown);
 document.addEventListener('contextmenu', ev => ev.preventDefault());
 
 document.addEventListener('keydown', ev => {
+  if (battleActive) {
+    const battleKeys = { '1': 'punch', '2': 'guard', '3': 'flee', Escape: 'flee' };
+    if (battleKeys[ev.key]) { ev.preventDefault(); performBattleCommand(battleKeys[ev.key]); }
+    return;
+  }
+
   if ((ev.key === 'e' || ev.key === 'E' || ev.code === 'Space') && !selectedFurniture) {
     ev.preventDefault();
     if (!ev.repeat) performChopAction();
@@ -1731,10 +2238,13 @@ function animate() {
     updateMovingFurniture(currentGroundPoint());
   }
 
-  const santaMoved = updateSantaMovement(dt);
+  updateForestEnemies(dt);
+  const santaMoved = battleActive ? false : updateSantaMovement(dt);
 
-  updateElfFollower(dt);
-  updateTreeInteraction(dt);
+  if (!battleActive) {
+    updateElfFollower(dt);
+    updateTreeInteraction(dt);
+  }
   updateSantaAnimation(dt, santaMoved);
   updateCamera(dt);
 
@@ -1774,7 +2284,12 @@ window.__fabricaDebug = {
   targetTree,
   addWood,
   get santaForwardAxis() { return santa.userData.forwardAxis; },
-  get buildCosts() { return { ...BUILD_COSTS }; }
+  get buildCosts() { return { ...BUILD_COSTS }; },
+  enemyRoots,
+  playerStats,
+  startBattle,
+  performBattleCommand,
+  get battleActive() { return battleActive; }
 };
 </script>
 </body>
